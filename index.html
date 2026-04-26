@@ -1,0 +1,472 @@
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&lt;!DOCTYPE html&gt;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&lt;html&gt;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&lt;head&gt;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&lt;meta charset="UTF-8"&gt;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&lt;title&gt;PBOS - Paddy Breeding App&lt;/title&gt;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&lt;style&gt;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				body { font-family: Arial; margin:0; background:#f5f5f5;}
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				header { background:#2e7d32; color:white; padding:12px; text-align:center;}
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				.container { padding:10px;}
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				.card { background:white; padding:12px; margin-bottom:10px; border-radius:10px;}
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				input, select, textarea, button {
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0; width:100%; padding:10px; margin:5px 0;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0; border-radius:6px; border:1px solid #ccc;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				}
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				button { background:#2e7d32; color:white; font-weight:bold;}
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				.small { font-size:12px; color:gray;}
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&lt;/style&gt;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&lt;/head&gt;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&lt;body&gt;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&lt;header&gt;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&lt;h2&gt;<span style="font-family:'Segoe UI Emoji'">🌾</span> PBOS - Breeding Data&lt;/h2&gt;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&lt;/header&gt;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&lt;div class="container"&gt;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&lt;div class="card"&gt;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&lt;h3&gt;Add Entry&lt;/h3&gt;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&lt;input id="lineId" placeholder="Line ID"&gt;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&lt;select id="lineType"&gt;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&lt;option&gt;A Line&lt;/option&gt;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&lt;option&gt;B Line&lt;/option&gt;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&lt;option&gt;R Line&lt;/option&gt;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&lt;option&gt;Hybrid&lt;/option&gt;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&lt;/select&gt;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&lt;input id="traitName" placeholder="Trait Name"&gt;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&lt;input id="traitValue" placeholder="Trait Value"&gt;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&lt;input id="traitUnit" placeholder="Unit (optional)"&gt;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&lt;button onclick="addTrait()"&gt;Add Trait&lt;/button&gt;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&lt;div id="traitsList"&gt;&lt;/div&gt;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&lt;button onclick="saveEntry()"&gt;Save Entry&lt;/button&gt;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&lt;/div&gt;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&lt;div class="card"&gt;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&lt;h3&gt;Entries&lt;/h3&gt;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&lt;div id="entries"&gt;&lt;/div&gt;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&lt;/div&gt;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&lt;div class="card"&gt;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&lt;button onclick="exportExcel()"&gt;Export Excel&lt;/button&gt;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&lt;/div&gt;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&lt;/div&gt;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&lt;script&gt;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				let currentTraits = [];
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				function addTrait(){
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0; let name = document.getElementById("traitName").value;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0; let value = document.getElementById("traitValue").value;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0; let unit = document.getElementById("traitUnit").value;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0; if(name &amp;&amp; value){
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;&#xa0;&#xa0; currentTraits.push({name, value, unit});
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;&#xa0;&#xa0; renderTraits();
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0; }
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0; document.getElementById("traitName").value="";
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0; document.getElementById("traitValue").value="";
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0; document.getElementById("traitUnit").value="";
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				}
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				function renderTraits(){
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0; let html="";
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0; currentTraits.forEach((t,i)=&gt;{
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;&#xa0;&#xa0; html += `&lt;div class="small"&gt;${t.name}: ${t.value} ${t.unit}&lt;/div&gt;`;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0; });
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0; document.getElementById("traitsList").innerHTML = html;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				}
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				function saveEntry(){
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0; let id = document.getElementById("lineId").value;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0; let type = document.getElementById("lineType").value;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0; if(!id) return alert("Enter Line ID");
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0; let entry = {
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;&#xa0;&#xa0; id, type,
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;&#xa0;&#xa0; traits: currentTraits,
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;&#xa0;&#xa0; date: new Date().toLocaleString()
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0; };
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0; let data = JSON.parse(localStorage.getItem("pbos") || "[]");
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0; data.push(entry);
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0; localStorage.setItem("pbos", JSON.stringify(data));
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0; currentTraits = [];
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0; renderTraits();
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0; loadEntries();
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				}
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				function loadEntries(){
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0; let data = JSON.parse(localStorage.getItem("pbos") || "[]");
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0; let html="";
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0; data.forEach(e=&gt;{
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;&#xa0;&#xa0; html += `&lt;div class="card"&gt;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;&#xa0;&#xa0;&#xa0;&#xa0; &lt;b&gt;${e.id}&lt;/b&gt; (${e.type})&lt;br&gt;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;&#xa0;&#xa0;&#xa0;&#xa0; ${e.traits.map(t=&gt;`${t.name}: ${t.value} ${t.unit}`).join("&lt;br&gt;")}
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;&#xa0;&#xa0; &lt;/div&gt;`;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0; });
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0; document.getElementById("entries").innerHTML = html;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				}
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				function exportExcel(){
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0; let data = JSON.parse(localStorage.getItem("pbos") || "[]");
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0; let rows = [];
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0; data.forEach(e=&gt;{
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;&#xa0;&#xa0; e.traits.forEach(t=&gt;{
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;&#xa0;&#xa0;&#xa0;&#xa0; rows.push({
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0; LineID: e.id,
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0; Type: e.type,
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0; Trait: t.name,
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0; Value: t.value,
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0; Unit: t.unit
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;&#xa0;&#xa0;&#xa0;&#xa0; });
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;&#xa0;&#xa0; });
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0; });
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0; let csv = "LineID,Type,Trait,Value,Unit\n";
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0; rows.forEach(r=&gt;{
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;&#xa0;&#xa0; csv += `${r.LineID},${r.Type},${r.Trait},${r.Value},${r.Unit}\n`;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0; });
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0; let blob = new Blob([csv], {type:"text/csv"});
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0; let a = document.createElement("a");
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0; a.href = URL.createObjectURL(blob);
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0; a.download = "pbos_data.csv";
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0; a.click();
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				}
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				loadEntries();
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&lt;/script&gt;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&#xa0;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&lt;/body&gt;
+			</p>
+			<p style="margin-top:0pt; margin-bottom:8pt">
+				&lt;/html&gt;
+			</p>
+	<p style="bottom: 10px; right: 10px; position: absolute;"><a href="https://wordtohtml.net/?utm_source=wth_free_doc_conversion_link&utm_medium=external" target="_blank" style="font-size:11px; color: #d0d0d0">Converted to HTML with WordToHTML.net</a><span style="font-size:11px; color: #d0d0d0"> | </span><a href="https://documentconverter.pro/?utm_source=wth_free_doc_conversion_link&utm_medium=external" target="_blank" style="font-size:11px; color: #d0d0d0">Document Converter for Windows</a></p>
