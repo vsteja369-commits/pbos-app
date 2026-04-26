@@ -419,22 +419,76 @@ function runGCA(){
   // OUTPUT
   let out = `<b>Grand Mean:</b> ${gm.toFixed(2)}<br><br>`;
 
-  out += "<b>GCA (A lines):</b><br>";
-  for(let a in GCA_A){
-    out += `${a}: ${GCA_A[a].toFixed(2)}<br>`;
-  }
+// ===== GCA A =====
+out += "<b>GCA (A lines):</b><br>";
 
-  out += "<br><b>GCA (R lines):</b><br>";
-  for(let r in GCA_R){
-    out += `${r}: ${GCA_R[r].toFixed(2)}<br>`;
-  }
+let A_ranking = Object.keys(GCA_A).map(a => ({
+  line: a,
+  val: GCA_A[a]
+}));
 
-  out += "<br><b>SCA (Crosses):</b><br>";
-  SCA.forEach(s=>{
-    out += `${s.cross}: ${s.value.toFixed(2)}<br>`;
-  });
+A_ranking.sort((a,b)=>b.val-a.val);
 
-  gcaResult.innerHTML = out;
+A_ranking.forEach((a,i)=>{
+  let tag = a.val > 0 ? "Good Combiner ✅" : "Poor ❌";
+  out += `${i+1}. ${a.line}: ${a.val.toFixed(2)} (${tag})<br>`;
+});
+
+let bestA = A_ranking[0];
+out += `<br>⭐ Best A Line: ${bestA.line}<br><br>`;
+
+// ===== GCA R =====
+out += "<b>GCA (R lines):</b><br>";
+
+let R_ranking = Object.keys(GCA_R).map(r => ({
+  line: r,
+  val: GCA_R[r]
+}));
+
+R_ranking.sort((a,b)=>b.val-a.val);
+
+R_ranking.forEach((r,i)=>{
+  let tag = r.val > 0 ? "Good Combiner ✅" : "Poor ❌";
+  out += `${i+1}. ${r.line}: ${r.val.toFixed(2)} (${tag})<br>`;
+});
+
+let bestR = R_ranking[0];
+out += `<br>⭐ Best R Line: ${bestR.line}<br><br>`;
+
+// ===== HYBRID RANKING =====
+out += "<b>Hybrid Ranking:</b><br>";
+
+let hybridRank = crosses.map(c => ({
+  cross: `${c.A} x ${c.R}`,
+  val: c.value
+}));
+
+hybridRank.sort((a,b)=>b.val-a.val);
+
+hybridRank.forEach((h,i)=>{
+  out += `${i+1}. ${h.cross}: ${h.val.toFixed(2)}<br>`;
+});
+
+let bestHybrid = hybridRank[0];
+out += `<br>🏆 Best Hybrid: ${bestHybrid.cross}<br><br>`;
+
+// ===== SCA =====
+out += "<b>SCA:</b><br>";
+
+SCA.forEach(s=>{
+  let tag = s.value > 0 ? "Good 🔥" : "Low ❌";
+  out += `${s.cross}: ${s.value.toFixed(2)} (${tag})<br>`;
+});
+
+// ===== VISUAL =====
+out += "<br><b>GCA A Visual:</b><br>";
+
+A_ranking.forEach(a=>{
+  let bars = "█".repeat(Math.max(0, Math.round(a.val)));
+  out += `${a.line}: ${bars}<br>`;
+});
+
+gcaResult.innerHTML = out;
 }
 </script>
 
