@@ -82,6 +82,15 @@ th, td { border:1px solid #ccc; padding:5px; text-align:center;}
 <div id="anovaResult"></div>
 </div>
 
+<div class="card">
+<h3>Line × Tester (GCA / SCA)</h3>
+
+<input id="gcaTrait" placeholder="Enter Trait Name">
+<button onclick="runGCA()">Run GCA/SCA</button>
+
+<div id="gcaResult"></div>
+</div>
+
 </div>
 
 <script>
@@ -332,6 +341,101 @@ out += `<br><b>Best Line:</b> ⭐ ${best.line} (Mean: ${best.mean.toFixed(2)})<b
 
 loadEntries();
 
+function runGCA(){
+  let trait = gcaTrait.value.toLowerCase();
+  let data = JSON.parse(localStorage.getItem("pbos")||"[]");
+
+  let crosses = [];
+
+  data.forEach(e=>{
+    e.traits.forEach(t=>{
+      if(t.name.toLowerCase() === trait){
+        let val = parseFloat(t.value);
+        if(!isNaN(val) && e.type === "Hybrid"){
+          
+          let parts = e.id.split("x");
+
+          if(parts.length === 2){
+            let A = parts[0].trim();
+            let R = parts[1].trim();
+
+            crosses.push({
+              A:A,
+              R:R,
+              value:val
+            });
+          }
+        }
+      }
+    });
+  });
+
+  if(crosses.length === 0){
+    gcaResult.innerHTML = "No hybrid data found";
+    return;
+  }
+
+  // Grand Mean
+  let total = crosses.reduce((a,b)=>a+b.value,0);
+  let gm = total / crosses.length;
+
+  // A-line means (GCA A)
+  let Agroup = {};
+  crosses.forEach(c=>{
+    if(!Agroup[c.A]) Agroup[c.A]=[];
+    Agroup[c.A].push(c.value);
+  });
+
+  let GCA_A = {};
+  for(let a in Agroup){
+    let mean = Agroup[a].reduce((x,y)=>x+y,0)/Agroup[a].length;
+    GCA_A[a] = mean - gm;
+  }
+
+  // R-line means (GCA R)
+  let Rgroup = {};
+  crosses.forEach(c=>{
+    if(!Rgroup[c.R]) Rgroup[c.R]=[];
+    Rgroup[c.R].push(c.value);
+  });
+
+  let GCA_R = {};
+  for(let r in Rgroup){
+    let mean = Rgroup[r].reduce((x,y)=>x+y,0)/Rgroup[r].length;
+    GCA_R[r] = mean - gm;
+  }
+
+  // SCA
+  let SCA = [];
+
+  crosses.forEach(c=>{
+    let sca = c.value - gm - GCA_A[c.A] - GCA_R[c.R];
+    SCA.push({
+      cross: `${c.A} x ${c.R}`,
+      value: sca
+    });
+  });
+
+  // OUTPUT
+  let out = `<b>Grand Mean:</b> ${gm.toFixed(2)}<br><br>`;
+
+  out += "<b>GCA (A lines):</b><br>";
+  for(let a in GCA_A){
+    out += `${a}: ${GCA_A[a].toFixed(2)}<br>`;
+  }
+
+  out += "<br><b>GCA (R lines):</b><br>";
+  for(let r in GCA_R){
+    out += `${r}: ${GCA_R[r].toFixed(2)}<br>`;
+  }
+
+  out += "<br><b>SCA (Crosses):</b><br>";
+  SCA.forEach(s=>{
+    out += `${s.cross}: ${s.value.toFixed(2)}<br>`;
+  });
+
+  gcaResult.innerHTML = out;
+}
 </script>
 
 </body>
