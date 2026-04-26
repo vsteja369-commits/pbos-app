@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PBOS - Paddy Breeding App</title>
+
+<style>
+body { font-family: Arial; margin:0; background:#f5f5f5;}
+header { background:#2e7d32; color:white; padding:12px; text-align:center;}
+.container { padding:10px;}
+.card { background:white; padding:12px; margin-bottom:10px; border-radius:10px;}
+input, select, textarea, button {
+  width:100%; padding:10px; margin:5px 0;
+  border-radius:6px; border:1px solid #ccc;
+}
+button { background:#2e7d32; color:white; font-weight:bold;}
+.small { font-size:12px; color:gray;}
+</style>
+</head>
+
+<body>
+
+<header>
+<h2>🌾 PBOS - Breeding Data</h2>
+</header>
+
+<div class="container">
+
+<div class="card">
+<h3>Add Entry</h3>
+
+<input id="lineId" placeholder="Line ID">
+<select id="lineType">
+<option>A Line</option>
+<option>B Line</option>
+<option>R Line</option>
+<option>Hybrid</option>
+</select>
+
+<input id="traitName" placeholder="Trait Name">
+<input id="traitValue" placeholder="Trait Value">
+<input id="traitUnit" placeholder="Unit (optional)">
+
+<button onclick="addTrait()">Add Trait</button>
+
+<div id="traitsList"></div>
+
+<button onclick="saveEntry()">Save Entry</button>
+</div>
+
+<div class="card">
+<h3>Entries</h3>
+<div id="entries"></div>
+</div>
+
+<div class="card">
+<button onclick="exportExcel()">Export Excel</button>
+</div>
+
+</div>
+
+<script>
+let currentTraits = [];
+
+function addTrait(){
+  let name = document.getElementById("traitName").value;
+  let value = document.getElementById("traitValue").value;
+  let unit = document.getElementById("traitUnit").value;
+
+  if(name && value){
+    currentTraits.push({name, value, unit});
+    renderTraits();
+  }
+
+  document.getElementById("traitName").value="";
+  document.getElementById("traitValue").value="";
+  document.getElementById("traitUnit").value="";
+}
+
+function renderTraits(){
+  let html="";
+  currentTraits.forEach((t,i)=>{
+    html += `<div class="small">${t.name}: ${t.value} ${t.unit}</div>`;
+  });
+  document.getElementById("traitsList").innerHTML = html;
+}
+
+function saveEntry(){
+  let id = document.getElementById("lineId").value;
+  let type = document.getElementById("lineType").value;
+
+  if(!id) return alert("Enter Line ID");
+
+  let entry = {
+    id, type,
+    traits: currentTraits,
+    date: new Date().toLocaleString()
+  };
+
+  let data = JSON.parse(localStorage.getItem("pbos") || "[]");
+  data.push(entry);
+  localStorage.setItem("pbos", JSON.stringify(data));
+
+  currentTraits = [];
+  renderTraits();
+  loadEntries();
+}
+
+function loadEntries(){
+  let data = JSON.parse(localStorage.getItem("pbos") || "[]");
+  let html="";
+
+  data.forEach(e=>{
+    html += `<div class="card">
+      <b>${e.id}</b> (${e.type})<br>
+      ${e.traits.map(t=>`${t.name}: ${t.value} ${t.unit}`).join("<br>")}
+    </div>`;
+  });
+
+  document.getElementById("entries").innerHTML = html;
+}
+
+function exportExcel(){
+  let data = JSON.parse(localStorage.getItem("pbos") || "[]");
+
+  let rows = [];
+
+  data.forEach(e=>{
+    e.traits.forEach(t=>{
+      rows.push({
+        LineID: e.id,
+        Type: e.type,
+        Trait: t.name,
+        Value: t.value,
+        Unit: t.unit
+      });
+    });
+  });
+
+  let csv = "LineID,Type,Trait,Value,Unit\n";
+  rows.forEach(r=>{
+    csv += `${r.LineID},${r.Type},${r.Trait},${r.Value},${r.Unit}\n`;
+  });
+
+  let blob = new Blob([csv], {type:"text/csv"});
+  let a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "pbos_data.csv";
+  a.click();
+}
+
+loadEntries();
+</script>
+
+</body>
+</html>
