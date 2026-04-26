@@ -156,17 +156,18 @@ function renderTable(){
   let data = JSON.parse(localStorage.getItem("pbos")||"[]");
 
   let html = `<table>
-  <tr><th>Line</th><th>Rep</th><th>Trait</th><th>Value</th><th>Unit</th></tr>`;
+  <tr><th>Line</th><th>Type</th><th>Rep</th><th>Trait</th><th>Value</th><th>Unit</th></tr>`;
 
   data.forEach(e=>{
     e.traits.forEach(t=>{
       html += `<tr>
-        <td>${e.id}</td>
-        <td>${e.rep}</td>
-        <td>${t.name}</td>
-        <td>${t.value}</td>
-        <td>${t.unit || ""}</td>
-      </tr>`;
+  <td>${e.id}</td>
+  <td>${e.type}</td>
+  <td>${e.rep}</td>
+  <td>${t.name}</td>
+  <td>${t.value}</td>
+  <td>${t.unit || ""}</td>
+</tr>`;
     });
   });
 
