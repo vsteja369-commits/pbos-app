@@ -257,11 +257,91 @@ function renderTable(){
 
   document.getElementById("tableView").innerHTML = html;
 }
+function runANOVA(){
+  let traitName = document.getElementById("anovaTrait").value;
+
+  let data = JSON.parse(localStorage.getItem("pbos")||"[]");
+
+  let filtered = [];
+
+  data.forEach(e=>{
+    e.traits.forEach(t=>{
+      if(t.name === traitName){
+        let val = parseFloat(t.value);
+        if(!isNaN(val)){
+          filtered.push({
+            line: e.id,
+            rep: e.rep,
+            value: val
+          });
+        }
+      }
+    });
+  });
+
+  if(filtered.length === 0){
+    document.getElementById("anovaResult").innerHTML = "No data found";
+    return;
+  }
+
+  // Grand Mean
+  let total = filtered.reduce((a,b)=>a+b.value,0);
+  let grandMean = total / filtered.length;
+
+  // Treatment Means
+  let treatment = {};
+  filtered.forEach(d=>{
+    if(!treatment[d.line]) treatment[d.line]=[];
+    treatment[d.line].push(d.value);
+  });
+
+  let treatmentMeans = {};
+  for(let t in treatment){
+    let sum = treatment[t].reduce((a,b)=>a+b,0);
+    treatmentMeans[t] = sum / treatment[t].length;
+  }
+
+  // Replication Means
+  let reps = {};
+  filtered.forEach(d=>{
+    if(!reps[d.rep]) reps[d.rep]=[];
+    reps[d.rep].push(d.value);
+  });
+
+  let repMeans = {};
+  for(let r in reps){
+    let sum = reps[r].reduce((a,b)=>a+b,0);
+    repMeans[r] = sum / reps[r].length;
+  }
+
+  // Output
+  let out = `<b>Grand Mean:</b> ${grandMean.toFixed(2)}<br><br>`;
+
+  out += "<b>Treatment Means:</b><br>";
+  for(let t in treatmentMeans){
+    out += `${t}: ${treatmentMeans[t].toFixed(2)}<br>`;
+  }
+
+  out += "<br><b>Replication Means:</b><br>";
+  for(let r in repMeans){
+    out += `${r}: ${repMeans[r].toFixed(2)}<br>`;
+  }
+
+  document.getElementById("anovaResult").innerHTML = out;
+}
 </script>
 <div class="card">
 <h3>Analysis</h3>
 <button onclick="calculateMean()">Calculate Mean</button>
 <div id="analysis"></div>
+</div>
+<div class="card">
+<h3>ANOVA (RBD)</h3>
+
+<input id="anovaTrait" placeholder="Enter Trait Name (exact)">
+<button onclick="runANOVA()">Run ANOVA</button>
+
+<div id="anovaResult"></div>
 </div>
 </body>
 </html>
