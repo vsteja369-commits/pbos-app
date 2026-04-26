@@ -15,7 +15,8 @@ input, select, textarea, button {
   border-radius:6px; border:1px solid #ccc;
 }
 button { background:#2e7d32; color:white; font-weight:bold;}
-.small { font-size:12px; color:gray;}
+table { width:100%; border-collapse:collapse; }
+th, td { border:1px solid #ccc; padding:5px; text-align:center;}
 </style>
 </head>
 
@@ -27,11 +28,10 @@ button { background:#2e7d32; color:white; font-weight:bold;}
 
 <div class="container">
 
-<!-- ENTRY SYSTEM -->
 <div class="card">
 <h3>Add Entry</h3>
 
-<input id="lineId" placeholder="Line ID (A12, R45)">
+<input id="lineId" placeholder="Line ID">
 <select id="lineType">
 <option>A Line</option>
 <option>B Line</option>
@@ -45,76 +45,73 @@ button { background:#2e7d32; color:white; font-weight:bold;}
 <option>Rep 3</option>
 </select>
 
-<input id="block" placeholder="Block / Field">
-<input id="plot" placeholder="Plot No">
-
 <input id="traitName" placeholder="Trait Name">
-<input id="traitValue" placeholder="Trait Value">
-<input id="traitUnit" placeholder="Unit">
+<input id="traitValue" placeholder="Value">
 
 <button onclick="addTrait()">Add Trait</button>
-
 <div id="traitsList"></div>
 
 <button onclick="saveEntry()">Save Entry</button>
 </div>
 
-<!-- DAILY LOG -->
-<div class="card">
-<h3>Daily Log</h3>
-
-<textarea id="logText" placeholder="Write your daily farm notes here..."></textarea>
-<button onclick="saveLog()">Save Log</button>
-
-<div id="logs"></div>
-</div>
-
-<!-- DATA VIEW -->
 <div class="card">
 <button onclick="clearAll()">Clear All Data</button>
+</div>
+
+<div class="card">
 <h3>Entries</h3>
 <div id="entries"></div>
-<h3>Data Table View</h3>
+</div>
+
+<div class="card">
+<h3>Table View</h3>
 <div id="tableView"></div>
+</div>
+
+<div class="card">
+<h3>Mean</h3>
+<button onclick="calculateMean()">Calculate Mean</button>
+<div id="analysis"></div>
+</div>
+
+<div class="card">
+<h3>ANOVA (RBD)</h3>
+<input id="anovaTrait" placeholder="Enter Trait Name">
+<button onclick="runANOVA()">Run ANOVA</button>
+<div id="anovaResult"></div>
 </div>
 
 </div>
 
 <script>
+
 let currentTraits = [];
 
-// Add trait
 function addTrait(){
   let name = traitName.value;
   let value = traitValue.value;
-  let unit = traitUnit.value;
 
   if(name && value){
-    currentTraits.push({name,value,unit});
+    currentTraits.push({name,value});
     renderTraits();
   }
 
   traitName.value="";
   traitValue.value="";
-  traitUnit.value="";
 }
 
 function renderTraits(){
   traitsList.innerHTML = currentTraits.map(t =>
-    `<div class="small">${t.name}: ${t.value} ${t.unit}</div>`
+    `<div>${t.name}: ${t.value}</div>`
   ).join("");
 }
 
-// Save entry
 function saveEntry(){
   let entry = {
     id: lineId.value,
     type: lineType.value,
     rep: rep.value,
-    block: block.value,
-    plot: plot.value,
-    traits: currentTraits,
-    date: new Date().toLocaleString()
+    traits: currentTraits
   };
 
   let data = JSON.parse(localStorage.getItem("pbos")||"[]");
@@ -126,315 +123,164 @@ function saveEntry(){
   loadEntries();
 }
 
-// Load entries
 function loadEntries(){
   let data = JSON.parse(localStorage.getItem("pbos")||"[]");
 
   entries.innerHTML = data.map((e,index) =>
-  `<div class="card">
-    <b>${e.id}</b> (${e.type})<br>
-    ${e.rep} | Block: ${e.block} | Plot: ${e.plot}<br>
-    ${e.traits.map(t=>`${t.name}: ${t.value} ${t.unit}`).join("<br>")}
-    <br>
-    <button onclick="deleteEntry(${index})">Delete</button>
-  </div>`
-).join("");
+    `<div class="card">
+      <b>${e.id}</b> (${e.rep})<br>
+      ${e.traits.map(t=>`${t.name}: ${t.value}`).join("<br>")}
+      <br><button onclick="deleteEntry(${index})">Delete</button>
+    </div>`
+  ).join("");
 
   renderTable();
 }
 
-// DAILY LOG SAVE
-function saveLog(){
-  let log = {
-    text: logText.value,
-    date: new Date().toLocaleString()
-  };
-
-  let logs = JSON.parse(localStorage.getItem("logs")||"[]");
-  logs.push(log);
-  localStorage.setItem("logs", JSON.stringify(logs));
-
-  logText.value="";
-  loadLogs();
-}
-
-// LOAD LOGS + SIMPLE EXTRACTION
-function loadLogs(){
-  let logs = JSON.parse(localStorage.getItem("logs")||"[]");
-
-  logsDiv = logs.map(l=>{
-    let extracted = extractData(l.text);
-    return `<div class="card">
-      <b>${l.date}</b><br>
-      ${l.text}<br>
-      <span class="small">Extracted: ${extracted}</span>
-    </div>`;
-  }).join("");
-
-  document.getElementById("logs").innerHTML = logsDiv;
-}
-
-// SIMPLE EXTRACTION
-function extractData(text){
-  let lines = text.match(/[A-Z]\d+/g) || [];
-  let crosses = text.match(/[A-Z]\d+\s?x\s?[A-Z]\d+/gi) || [];
-  return `Lines: ${lines.join(", ")} | Crosses: ${crosses.join(", ")}`;
-}
-
-loadEntries();
-loadLogs();
-function calculateMean(){
-  let data = JSON.parse(localStorage.getItem("pbos") || "[]");
-
-  let result = {};
-
-  data.forEach(entry => {
-    entry.traits.forEach(trait => {
-      let key = entry.id + " - " + trait.name;
-
-      if(!result[key]){
-        result[key] = {sum:0, count:0};
-      }
-
-      let val = parseFloat(trait.value);
-
-      if(!isNaN(val)){
-        result[key].sum += val;
-        result[key].count += 1;
-      }
-    });
-  });
-
-  let output = "";
-
-  for(let key in result){
-    let mean = result[key].sum / result[key].count;
-    output += `<div>${key} → Mean: ${mean.toFixed(2)}</div>`;
-  }
-
-  document.getElementById("analysis").innerHTML = output;
-}
-function deleteEntry(index){
+function deleteEntry(i){
   let data = JSON.parse(localStorage.getItem("pbos")||"[]");
-  data.splice(index,1);
+  data.splice(i,1);
   localStorage.setItem("pbos", JSON.stringify(data));
   loadEntries();
 }
 
 function clearAll(){
-  if(confirm("Delete all data?")){
-    localStorage.removeItem("pbos");
-    loadEntries();
-  }
+  localStorage.removeItem("pbos");
+  loadEntries();
 }
+
 function renderTable(){
   let data = JSON.parse(localStorage.getItem("pbos")||"[]");
 
-  let html = `<table border="1" style="width:100%; border-collapse:collapse;">
-  <tr>
-    <th>Line</th>
-    <th>Type</th>
-    <th>Rep</th>
-    <th>Trait</th>
-    <th>Value</th>
-    <th>Unit</th>
-  </tr>`;
+  let html = `<table>
+  <tr><th>Line</th><th>Rep</th><th>Trait</th><th>Value</th></tr>`;
 
   data.forEach(e=>{
     e.traits.forEach(t=>{
       html += `<tr>
         <td>${e.id}</td>
-        <td>${e.type}</td>
         <td>${e.rep}</td>
         <td>${t.name}</td>
         <td>${t.value}</td>
-        <td>${t.unit}</td>
       </tr>`;
     });
   });
 
   html += "</table>";
 
-  document.getElementById("tableView").innerHTML = html;
+  tableView.innerHTML = html;
 }
-function runANOVA(){
-  let traitName = document.getElementById("anovaTrait").value;
 
+function calculateMean(){
+  let data = JSON.parse(localStorage.getItem("pbos")||"[]");
+  let result = {};
+
+  data.forEach(e=>{
+    e.traits.forEach(t=>{
+      let key = e.id + "-" + t.name;
+
+      if(!result[key]) result[key]={sum:0,count:0};
+
+      let val = parseFloat(t.value);
+      if(!isNaN(val)){
+        result[key].sum += val;
+        result[key].count++;
+      }
+    });
+  });
+
+  let out="";
+  for(let k in result){
+    let mean = result[k].sum/result[k].count;
+    out += `${k}: ${mean.toFixed(2)}<br>`;
+  }
+
+  analysis.innerHTML = out;
+}
+
+function runANOVA(){
+  let trait = anovaTrait.value;
   let data = JSON.parse(localStorage.getItem("pbos")||"[]");
 
   let filtered = [];
 
   data.forEach(e=>{
     e.traits.forEach(t=>{
-      if(t.name === traitName){
-        let val = parseFloat(t.value);
+      if(t.name.toLowerCase() === trait.toLowerCase()){  // ✅ FIXED
+        let val=parseFloat(t.value);
         if(!isNaN(val)){
-          filtered.push({
-            line: e.id,
-            rep: e.rep,
-            value: val
-          });
+          filtered.push({line:e.id,rep:e.rep,value:val});
         }
       }
     });
   });
 
-  if(filtered.length === 0){
-    document.getElementById("anovaResult").innerHTML = "No data found";
+  if(filtered.length===0){
+    anovaResult.innerHTML="No data";
     return;
   }
-// ===== CALCULATIONS =====
 
-// Grand Mean
-let total = filtered.reduce((a,b)=>a+b.value,0);
-let grandMean = total / filtered.length;
-
-// Treatment grouping
-let treatment = {};
-filtered.forEach(d=>{
-  if(!treatment[d.line]) treatment[d.line]=[];
-  treatment[d.line].push(d.value);
-});
-
-// Treatment Means
-let treatmentMeans = {};
-for(let t in treatment){
-  let sum = treatment[t].reduce((a,b)=>a+b,0);
-  treatmentMeans[t] = sum / treatment[t].length;
-}
-
-// Rep grouping
-let reps = {};
-filtered.forEach(d=>{
-  if(!reps[d.rep]) reps[d.rep]=[];
-  reps[d.rep].push(d.value);
-});
-
-// Rep Means
-let repMeans = {};
-for(let r in reps){
-  let sum = reps[r].reduce((a,b)=>a+b,0);
-  repMeans[r] = sum / reps[r].length;
-}
-
-// ===== SS =====
-
-// Total SS
-let SST = filtered.reduce((sum,d)=> sum + Math.pow(d.value - grandMean,2),0);
-
-// Treatment SS
-let SSTreat = 0;
-for(let t in treatment){
-  let mean = treatmentMeans[t];
-  let n = treatment[t].length;
-  SSTreat += n * Math.pow(mean - grandMean,2);
-}
-
-// Rep SS
-let SSRep = 0;
-for(let r in reps){
-  let mean = repMeans[r];
-  let n = reps[r].length;
-  SSRep += n * Math.pow(mean - grandMean,2);
-}
-
-// Error SS
-let SSE = SST - SSTreat - SSRep;
-
-// DF
-let t = Object.keys(treatment).length;
-let r = Object.keys(reps).length;
-
-let dfTreat = t - 1;
-let dfRep = r - 1;
-let dfError = (t-1)*(r-1);
-
-// MS
-let MSTreat = SSTreat / dfTreat;
-let MSE = SSE / dfError;
-
-// F
-let F = MSTreat / MSE;
-
-// ===== OUTPUT =====
-
-let out = `<b>Grand Mean:</b> ${grandMean.toFixed(2)}<br><br>`;
-
-out += "<b>Treatment Means:</b><br>";
-for(let t in treatmentMeans){
-  out += `${t}: ${treatmentMeans[t].toFixed(2)}<br>`;
-}
-
-out += "<br><b>Replication Means:</b><br>";
-for(let r in repMeans){
-  out += `${r}: ${repMeans[r].toFixed(2)}<br>`;
-}
-
-out += "<br><b>ANOVA Table:</b><br>";
-out += `Treatment SS: ${SSTreat.toFixed(2)}<br>`;
-out += `Replication SS: ${SSRep.toFixed(2)}<br>`;
-out += `Error SS: ${SSE.toFixed(2)}<br>`;
-out += `F-value: ${F.toFixed(2)}<br>`;
-
-document.getElementById("anovaResult").innerHTML = out;
-  // Grand Mean
   let total = filtered.reduce((a,b)=>a+b.value,0);
-  let grandMean = total / filtered.length;
+  let gm = total/filtered.length;
 
-  // Treatment Means
-  let treatment = {};
+  let treat={}, reps={};
+
   filtered.forEach(d=>{
-    if(!treatment[d.line]) treatment[d.line]=[];
-    treatment[d.line].push(d.value);
-  });
-
-  let treatmentMeans = {};
-  for(let t in treatment){
-    let sum = treatment[t].reduce((a,b)=>a+b,0);
-    treatmentMeans[t] = sum / treatment[t].length;
-  }
-
-  // Replication Means
-  let reps = {};
-  filtered.forEach(d=>{
+    if(!treat[d.line]) treat[d.line]=[];
     if(!reps[d.rep]) reps[d.rep]=[];
+    treat[d.line].push(d.value);
     reps[d.rep].push(d.value);
   });
 
-  let repMeans = {};
+  let tm={}, rm={};
+
+  for(let t in treat){
+    tm[t]=treat[t].reduce((a,b)=>a+b,0)/treat[t].length;
+  }
+
   for(let r in reps){
-    let sum = reps[r].reduce((a,b)=>a+b,0);
-    repMeans[r] = sum / reps[r].length;
+    rm[r]=reps[r].reduce((a,b)=>a+b,0)/reps[r].length;
   }
 
-  // Output
-  let out = `<b>Grand Mean:</b> ${grandMean.toFixed(2)}<br><br>`;
+  let SST = filtered.reduce((s,d)=>s+Math.pow(d.value-gm,2),0);
 
-  out += "<b>Treatment Means:</b><br>";
-  for(let t in treatmentMeans){
-    out += `${t}: ${treatmentMeans[t].toFixed(2)}<br>`;
+  let SSTr=0;
+  for(let t in tm){
+    SSTr += treat[t].length*Math.pow(tm[t]-gm,2);
   }
 
-  out += "<br><b>Replication Means:</b><br>";
-  for(let r in repMeans){
-    out += `${r}: ${repMeans[r].toFixed(2)}<br>`;
+  let SSRep=0;
+  for(let r in rm){
+    SSRep += reps[r].length*Math.pow(rm[r]-gm,2);
   }
 
-  document.getElementById("anovaResult").innerHTML = out;
+  let SSE = SST-SSTr-SSRep;
+
+  let t=Object.keys(treat).length;
+  let r=Object.keys(reps).length;
+
+  let dfError = (t-1)*(r-1);
+  let MSTr = SSTr/(t-1);
+  let MSE = dfError>0 ? SSE/dfError : 0;
+  let F = MSE!==0 ? MSTr/MSE : 0;
+
+  let out=`Grand Mean: ${gm.toFixed(2)}<br><br>`;
+
+  out+="Treatment Means:<br>";
+  for(let t in tm) out+=`${t}: ${tm[t].toFixed(2)}<br>`;
+
+  out+="<br>ANOVA:<br>";
+  out+=`SS Treatment: ${SSTr.toFixed(2)}<br>`;
+  out+=`SS Rep: ${SSRep.toFixed(2)}<br>`;
+  out+=`SS Error: ${SSE.toFixed(2)}<br>`;
+  out+=`F: ${F.toFixed(2)}<br>`;
+
+  anovaResult.innerHTML=out;
 }
+
+loadEntries();
+
 </script>
-<div class="card">
-<h3>Analysis</h3>
-<button onclick="calculateMean()">Calculate Mean</button>
-<div id="analysis"></div>
-</div>
-<div class="card">
-<h3>ANOVA (RBD)</h3>
 
-<input id="anovaTrait" placeholder="Enter Trait Name (exact)">
-<button onclick="runANOVA()">Run ANOVA</button>
-
-<div id="anovaResult"></div>
-</div>
 </body>
 </html>
