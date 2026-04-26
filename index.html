@@ -131,7 +131,7 @@ function loadEntries(){
 
   entries.innerHTML = data.map((e,index) =>
     `<div class="card">
-      <b>${e.id}</b> (${e.rep})<br>
+      <b>${e.id}</b> (${e.type}) - ${e.rep}<br>
       ${e.traits.map(t=>`${t.name}: ${t.value} ${t.unit || ""}`).join("<br>")}
       <br><button onclick="deleteEntry(${index})">Delete</button>
     </div>`
