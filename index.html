@@ -74,6 +74,8 @@ button { background:#2e7d32; color:white; font-weight:bold;}
 <button onclick="clearAll()">Clear All Data</button>
 <h3>Entries</h3>
 <div id="entries"></div>
+<h3>Data Table View</h3>
+<div id="tableView"></div>
 </div>
 
 </div>
@@ -137,6 +139,8 @@ function loadEntries(){
     <button onclick="deleteEntry(${index})">Delete</button>
   </div>`
 ).join("");
+
+  renderTable();
 }
 
 // DAILY LOG SAVE
@@ -222,6 +226,36 @@ function clearAll(){
     localStorage.removeItem("pbos");
     loadEntries();
   }
+}
+function renderTable(){
+  let data = JSON.parse(localStorage.getItem("pbos")||"[]");
+
+  let html = `<table border="1" style="width:100%; border-collapse:collapse;">
+  <tr>
+    <th>Line</th>
+    <th>Type</th>
+    <th>Rep</th>
+    <th>Trait</th>
+    <th>Value</th>
+    <th>Unit</th>
+  </tr>`;
+
+  data.forEach(e=>{
+    e.traits.forEach(t=>{
+      html += `<tr>
+        <td>${e.id}</td>
+        <td>${e.type}</td>
+        <td>${e.rep}</td>
+        <td>${t.name}</td>
+        <td>${t.value}</td>
+        <td>${t.unit}</td>
+      </tr>`;
+    });
+  });
+
+  html += "</table>";
+
+  document.getElementById("tableView").innerHTML = html;
 }
 </script>
 <div class="card">
