@@ -305,7 +305,28 @@ for(let i=0; i<lines.length; i++){
     out += `${l1} vs ${l2} → Diff: ${diff.toFixed(2)} → ${significance}<br>`;
   }
 }
+// ===== RANKING + BEST LINE =====
 
+out += "<br><b>Ranking:</b><br>";
+
+// Convert means to array
+let ranking = Object.keys(tm).map(line => ({
+  line: line,
+  mean: tm[line]
+}));
+
+// Sort descending (highest first)
+ranking.sort((a,b)=>b.mean - a.mean);
+
+// Display ranking
+ranking.forEach((r,i)=>{
+  out += `${i+1}. ${r.line} → ${r.mean.toFixed(2)}<br>`;
+});
+
+// Highlight best line
+let best = ranking[0];
+
+out += `<br><b>Best Line:</b> ⭐ ${best.line} (Mean: ${best.mean.toFixed(2)})<br>`;
   anovaResult.innerHTML=out;
 }
 
