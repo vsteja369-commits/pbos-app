@@ -283,7 +283,100 @@ function runANOVA(){
     document.getElementById("anovaResult").innerHTML = "No data found";
     return;
   }
+// ===== CALCULATIONS =====
 
+// Grand Mean
+let total = filtered.reduce((a,b)=>a+b.value,0);
+let grandMean = total / filtered.length;
+
+// Treatment grouping
+let treatment = {};
+filtered.forEach(d=>{
+  if(!treatment[d.line]) treatment[d.line]=[];
+  treatment[d.line].push(d.value);
+});
+
+// Treatment Means
+let treatmentMeans = {};
+for(let t in treatment){
+  let sum = treatment[t].reduce((a,b)=>a+b,0);
+  treatmentMeans[t] = sum / treatment[t].length;
+}
+
+// Rep grouping
+let reps = {};
+filtered.forEach(d=>{
+  if(!reps[d.rep]) reps[d.rep]=[];
+  reps[d.rep].push(d.value);
+});
+
+// Rep Means
+let repMeans = {};
+for(let r in reps){
+  let sum = reps[r].reduce((a,b)=>a+b,0);
+  repMeans[r] = sum / reps[r].length;
+}
+
+// ===== SS =====
+
+// Total SS
+let SST = filtered.reduce((sum,d)=> sum + Math.pow(d.value - grandMean,2),0);
+
+// Treatment SS
+let SSTreat = 0;
+for(let t in treatment){
+  let mean = treatmentMeans[t];
+  let n = treatment[t].length;
+  SSTreat += n * Math.pow(mean - grandMean,2);
+}
+
+// Rep SS
+let SSRep = 0;
+for(let r in reps){
+  let mean = repMeans[r];
+  let n = reps[r].length;
+  SSRep += n * Math.pow(mean - grandMean,2);
+}
+
+// Error SS
+let SSE = SST - SSTreat - SSRep;
+
+// DF
+let t = Object.keys(treatment).length;
+let r = Object.keys(reps).length;
+
+let dfTreat = t - 1;
+let dfRep = r - 1;
+let dfError = (t-1)*(r-1);
+
+// MS
+let MSTreat = SSTreat / dfTreat;
+let MSE = SSE / dfError;
+
+// F
+let F = MSTreat / MSE;
+
+// ===== OUTPUT =====
+
+let out = `<b>Grand Mean:</b> ${grandMean.toFixed(2)}<br><br>`;
+
+out += "<b>Treatment Means:</b><br>";
+for(let t in treatmentMeans){
+  out += `${t}: ${treatmentMeans[t].toFixed(2)}<br>`;
+}
+
+out += "<br><b>Replication Means:</b><br>";
+for(let r in repMeans){
+  out += `${r}: ${repMeans[r].toFixed(2)}<br>`;
+}
+
+out += "<br><b>ANOVA Table:</b><br>";
+out += `Treatment SS: ${SSTreat.toFixed(2)}<br>`;
+out += `Replication SS: ${SSRep.toFixed(2)}<br>`;
+out += `Error SS: ${SSE.toFixed(2)}<br>`;
+out += `F-value: ${F.toFixed(2)}<br>`;
+
+document.getElementById("anovaResult").innerHTML = out;
   // Grand Mean
   let total = filtered.reduce((a,b)=>a+b.value,0);
   let grandMean = total / filtered.length;
