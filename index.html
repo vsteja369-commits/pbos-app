@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PBOS - Paddy Breeding App</title>
+<title>PBOS - Breeding System</title>
 
 <style>
-body { font-family: Arial; margin:0; background:#f5f5f5;}
+body { font-family: Arial; background:#f5f5f5; margin:0;}
 header { background:#2e7d32; color:white; padding:12px; text-align:center;}
 .container { padding:10px;}
 .card { background:white; padding:12px; margin-bottom:10px; border-radius:10px;}
@@ -22,15 +22,16 @@ button { background:#2e7d32; color:white; font-weight:bold;}
 <body>
 
 <header>
-<h2>🌾 PBOS - Breeding Data</h2>
+<h2>🌾 PBOS - Breeding System</h2>
 </header>
 
 <div class="container">
 
+<!-- ENTRY SYSTEM -->
 <div class="card">
 <h3>Add Entry</h3>
 
-<input id="lineId" placeholder="Line ID">
+<input id="lineId" placeholder="Line ID (A12, R45)">
 <select id="lineType">
 <option>A Line</option>
 <option>B Line</option>
@@ -38,9 +39,18 @@ button { background:#2e7d32; color:white; font-weight:bold;}
 <option>Hybrid</option>
 </select>
 
+<select id="rep">
+<option>Rep 1</option>
+<option>Rep 2</option>
+<option>Rep 3</option>
+</select>
+
+<input id="block" placeholder="Block / Field">
+<input id="plot" placeholder="Plot No">
+
 <input id="traitName" placeholder="Trait Name">
 <input id="traitValue" placeholder="Trait Value">
-<input id="traitUnit" placeholder="Unit (optional)">
+<input id="traitUnit" placeholder="Unit">
 
 <button onclick="addTrait()">Add Trait</button>
 
@@ -49,13 +59,20 @@ button { background:#2e7d32; color:white; font-weight:bold;}
 <button onclick="saveEntry()">Save Entry</button>
 </div>
 
+<!-- DAILY LOG -->
+<div class="card">
+<h3>Daily Log</h3>
+
+<textarea id="logText" placeholder="Write your daily farm notes here..."></textarea>
+<button onclick="saveLog()">Save Log</button>
+
+<div id="logs"></div>
+</div>
+
+<!-- DATA VIEW -->
 <div class="card">
 <h3>Entries</h3>
 <div id="entries"></div>
-</div>
-
-<div class="card">
-<button onclick="exportExcel()">Export Excel</button>
 </div>
 
 </div>
@@ -63,94 +80,102 @@ button { background:#2e7d32; color:white; font-weight:bold;}
 <script>
 let currentTraits = [];
 
+// Add trait
 function addTrait(){
-  let name = document.getElementById("traitName").value;
-  let value = document.getElementById("traitValue").value;
-  let unit = document.getElementById("traitUnit").value;
+  let name = traitName.value;
+  let value = traitValue.value;
+  let unit = traitUnit.value;
 
   if(name && value){
-    currentTraits.push({name, value, unit});
+    currentTraits.push({name,value,unit});
     renderTraits();
   }
 
-  document.getElementById("traitName").value="";
-  document.getElementById("traitValue").value="";
-  document.getElementById("traitUnit").value="";
+  traitName.value="";
+  traitValue.value="";
+  traitUnit.value="";
 }
 
 function renderTraits(){
-  let html="";
-  currentTraits.forEach((t,i)=>{
-    html += `<div class="small">${t.name}: ${t.value} ${t.unit}</div>`;
-  });
-  document.getElementById("traitsList").innerHTML = html;
+  traitsList.innerHTML = currentTraits.map(t =>
+    `<div class="small">${t.name}: ${t.value} ${t.unit}</div>`
+  ).join("");
 }
 
+// Save entry
 function saveEntry(){
-  let id = document.getElementById("lineId").value;
-  let type = document.getElementById("lineType").value;
-
-  if(!id) return alert("Enter Line ID");
-
   let entry = {
-    id, type,
+    id: lineId.value,
+    type: lineType.value,
+    rep: rep.value,
+    block: block.value,
+    plot: plot.value,
     traits: currentTraits,
     date: new Date().toLocaleString()
   };
 
-  let data = JSON.parse(localStorage.getItem("pbos") || "[]");
+  let data = JSON.parse(localStorage.getItem("pbos")||"[]");
   data.push(entry);
   localStorage.setItem("pbos", JSON.stringify(data));
 
-  currentTraits = [];
+  currentTraits=[];
   renderTraits();
   loadEntries();
 }
 
+// Load entries
 function loadEntries(){
-  let data = JSON.parse(localStorage.getItem("pbos") || "[]");
-  let html="";
+  let data = JSON.parse(localStorage.getItem("pbos")||"[]");
 
-  data.forEach(e=>{
-    html += `<div class="card">
-      <b>${e.id}</b> (${e.type})<br>
-      ${e.traits.map(t=>`${t.name}: ${t.value} ${t.unit}`).join("<br>")}
-    </div>`;
-  });
-
-  document.getElementById("entries").innerHTML = html;
+  entries.innerHTML = data.map(e =>
+    `<div class="card">
+    <b>${e.id}</b> (${e.type})<br>
+    ${e.rep} | Block: ${e.block} | Plot: ${e.plot}<br>
+    ${e.traits.map(t=>`${t.name}: ${t.value} ${t.unit}`).join("<br>")}
+    </div>`
+  ).join("");
 }
 
-function exportExcel(){
-  let data = JSON.parse(localStorage.getItem("pbos") || "[]");
+// DAILY LOG SAVE
+function saveLog(){
+  let log = {
+    text: logText.value,
+    date: new Date().toLocaleString()
+  };
 
-  let rows = [];
+  let logs = JSON.parse(localStorage.getItem("logs")||"[]");
+  logs.push(log);
+  localStorage.setItem("logs", JSON.stringify(logs));
 
-  data.forEach(e=>{
-    e.traits.forEach(t=>{
-      rows.push({
-        LineID: e.id,
-        Type: e.type,
-        Trait: t.name,
-        Value: t.value,
-        Unit: t.unit
-      });
-    });
-  });
+  logText.value="";
+  loadLogs();
+}
 
-  let csv = "LineID,Type,Trait,Value,Unit\n";
-  rows.forEach(r=>{
-    csv += `${r.LineID},${r.Type},${r.Trait},${r.Value},${r.Unit}\n`;
-  });
+// LOAD LOGS + SIMPLE EXTRACTION
+function loadLogs(){
+  let logs = JSON.parse(localStorage.getItem("logs")||"[]");
 
-  let blob = new Blob([csv], {type:"text/csv"});
-  let a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "pbos_data.csv";
-  a.click();
+  logsDiv = logs.map(l=>{
+    let extracted = extractData(l.text);
+    return `<div class="card">
+      <b>${l.date}</b><br>
+      ${l.text}<br>
+      <span class="small">Extracted: ${extracted}</span>
+    </div>`;
+  }).join("");
+
+  document.getElementById("logs").innerHTML = logsDiv;
+}
+
+// SIMPLE EXTRACTION
+function extractData(text){
+  let lines = text.match(/[A-Z]\d+/g) || [];
+  let crosses = text.match(/[A-Z]\d+\s?x\s?[A-Z]\d+/gi) || [];
+  return `Lines: ${lines.join(", ")} | Crosses: ${crosses.join(", ")}`;
 }
 
 loadEntries();
+loadLogs();
 </script>
 
 </body>
