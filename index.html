@@ -47,6 +47,7 @@ th, td { border:1px solid #ccc; padding:5px; text-align:center;}
 
 <input id="traitName" placeholder="Trait Name">
 <input id="traitValue" placeholder="Value">
+<input id="traitUnit" placeholder="Unit (cm, g, %, etc)">
 
 <button onclick="addTrait()">Add Trait</button>
 <div id="traitsList"></div>
@@ -90,14 +91,16 @@ let currentTraits = [];
 function addTrait(){
   let name = traitName.value;
   let value = traitValue.value;
+  let unit = traitUnit.value;
 
   if(name && value){
-    currentTraits.push({name,value});
+    currentTraits.push({name,value,unit});
     renderTraits();
   }
 
   traitName.value="";
   traitValue.value="";
+  traitUnit.value="";
 }
 
 function renderTraits(){
@@ -129,7 +132,7 @@ function loadEntries(){
   entries.innerHTML = data.map((e,index) =>
     `<div class="card">
       <b>${e.id}</b> (${e.rep})<br>
-      ${e.traits.map(t=>`${t.name}: ${t.value}`).join("<br>")}
+      ${e.traits.map(t=>`${t.name}: ${t.value} ${t.unit || ""}`).join("<br>")}
       <br><button onclick="deleteEntry(${index})">Delete</button>
     </div>`
   ).join("");
@@ -153,7 +156,7 @@ function renderTable(){
   let data = JSON.parse(localStorage.getItem("pbos")||"[]");
 
   let html = `<table>
-  <tr><th>Line</th><th>Rep</th><th>Trait</th><th>Value</th></tr>`;
+  <tr><th>Line</th><th>Rep</th><th>Trait</th><th>Value</th><th>Unit</th></tr>`;
 
   data.forEach(e=>{
     e.traits.forEach(t=>{
@@ -162,6 +165,7 @@ function renderTable(){
         <td>${e.rep}</td>
         <td>${t.name}</td>
         <td>${t.value}</td>
+        <td>${t.unit || ""}</td>
       </tr>`;
     });
   });
