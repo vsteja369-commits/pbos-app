@@ -286,6 +286,25 @@ let LSD = MSE !== 0 ? tValue * Math.sqrt((2 * MSE) / rRep) : 0;
   out+=`SS Rep: ${SSRep.toFixed(2)}<br>`;
   out+=`SS Error: ${SSE.toFixed(2)}<br>`;
   out+=`F: ${F.toFixed(2)}<br>`;
+  // ===== PAIRWISE COMPARISON =====
+
+out += "<br><b>Comparison (LSD test):</b><br>";
+
+let lines = Object.keys(tm);
+
+for(let i=0; i<lines.length; i++){
+  for(let j=i+1; j<lines.length; j++){
+
+    let l1 = lines[i];
+    let l2 = lines[j];
+
+    let diff = Math.abs(tm[l1] - tm[l2]);
+
+    let significance = diff > LSD ? "Significant ✅" : "Not Significant ❌";
+
+    out += `${l1} vs ${l2} → Diff: ${diff.toFixed(2)} → ${significance}<br>`;
+  }
+}
 
   anovaResult.innerHTML=out;
 }
