@@ -184,29 +184,73 @@ function clearAll(){
 }
 
 function renderTable(){
+
   let data = JSON.parse(localStorage.getItem("pbos")||"[]");
 
-  let html = `<table>
-  <tr><th>Line</th><th>Type</th><th>Rep</th><th>Trait</th><th>Value</th><th>Unit</th></tr>`;
+  let html = `<table contenteditable="true">
+  <tr>
+    <th>Line</th>
+    <th>Type</th>
+    <th>Rep</th>
+    <th>Trait</th>
+    <th>Value</th>
+    <th>Unit</th>
+  </tr>`;
 
-  data.forEach(e=>{
-    e.traits.forEach(t=>{
-      html += `<tr>
-  <td>${e.id}</td>
-  <td>${e.type}</td>
-  <td>${e.rep}</td>
-  <td>${t.name}</td>
-  <td>${t.value}</td>
-  <td>${t.unit || ""}</td>
-</tr>`;
+  data.forEach((e,i)=>{
+    e.traits.forEach((t,j)=>{
+      html += `<tr data-i="${i}" data-j="${j}">
+        <td contenteditable="true">${e.id}</td>
+        <td contenteditable="true">${e.type}</td>
+        <td contenteditable="true">${e.rep}</td>
+        <td contenteditable="true">${t.name}</td>
+        <td contenteditable="true">${t.value}</td>
+        <td contenteditable="true">${t.unit || ""}</td>
+      </tr>`;
     });
   });
 
   html += "</table>";
 
+  html += `<button onclick="saveTable()">Save Changes</button>`;
+
   tableView.innerHTML = html;
 }
 
+function saveTable(){
+
+  let table = document.querySelector("#tableView table");
+  let rows = table.querySelectorAll("tr");
+
+  let newData = [];
+
+  rows.forEach((row,i)=>{
+
+    if(i===0) return; // skip header
+
+    let cells = row.querySelectorAll("td");
+
+    let entry = {
+      id: cells[0].innerText.trim(),
+      type: cells[1].innerText.trim(),
+      rep: cells[2].innerText.trim(),
+      traits: [{
+        name: cells[3].innerText.trim(),
+        value: cells[4].innerText.trim(),
+        unit: cells[5].innerText.trim()
+      }]
+    };
+
+    newData.push(entry);
+  });
+
+  localStorage.setItem("pbos", JSON.stringify(newData));
+
+  loadEntries();
+
+  alert("Table updated");
+}
+  
 function calculateMean(){
   let data = JSON.parse(localStorage.getItem("pbos")||"[]");
   let result = {};
