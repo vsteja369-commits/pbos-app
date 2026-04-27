@@ -67,6 +67,17 @@ A1,A Line,Rep 1,100,25"></textarea>
 
 <div id="classResult"></div>
 </div>
+
+<div class="card">
+<h3>Breeding AI Assistant</h3>
+
+<input id="aiQuery" placeholder="Ask something like: best A line">
+
+<button onclick="runAI()">Ask</button>
+
+<div id="aiResult"></div>
+</div>
+  
 </div>
 
 <script>
@@ -479,6 +490,74 @@ loadEntries();
   });
 
   document.getElementById("classResult").innerHTML = out;
+  }
+
+  function runAI(){
+
+  let q = document.getElementById("aiQuery").value.toLowerCase();
+  let data = JSON.parse(localStorage.getItem("pbos")||"[]");
+
+  let response = "";
+
+  // ===== BEST A LINE =====
+  if(q.includes("best a")){
+
+    let best = null;
+
+    data.forEach(e=>{
+      if(e.type==="A Line"){
+        let score = 0;
+
+        e.traits.forEach(t=>{
+          if(t.name.toLowerCase()=="stigma exertion" && t.value>20) score+=2;
+          if(t.name.toLowerCase()=="spikelet opening" && t.value>5) score+=2;
+        });
+
+        if(!best || score > best.score){
+          best = {line:e.id,score};
+        }
+      }
+    });
+
+    response = best ? `Best A line: ${best.line}` : "No A lines found";
+  }
+
+  // ===== REJECT R LINES =====
+  else if(q.includes("reject r")){
+
+    let rejects = [];
+
+    data.forEach(e=>{
+      if(e.type==="R Line"){
+        e.traits.forEach(t=>{
+          if(t.name.toLowerCase()=="pollen shedding" && t.value<5){
+            rejects.push(e.id);
+          }
+        });
+      }
+    });
+
+    response = rejects.length ? "Reject R lines: "+rejects.join(", ") : "No rejection";
+  }
+
+  // ===== CROSS SUGGESTION =====
+  else if(q.includes("cross")){
+
+    let A = data.filter(e=>e.type==="A Line");
+    let R = data.filter(e=>e.type==="R Line");
+
+    if(A.length && R.length){
+      response = `Try cross: ${A[0].id} x ${R[0].id}`;
+    } else {
+      response = "Not enough lines";
+    }
+  }
+
+  else{
+    response = "Try: best A line, reject R lines, suggest cross";
+  }
+
+  document.getElementById("aiResult").innerHTML = response;
   }
 
 </script>
