@@ -3,26 +3,81 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Breeding Intelligence Full System</title>
+
+<title>🌾 Breeding Intelligence System</title>
 
 <style>
-body {font-family: Arial; background:#f4f4f4;}
-.card {background:white; padding:10px; margin:10px; border-radius:8px;}
-button {padding:8px; margin:5px;}
-table {width:100%; border-collapse:collapse;}
-td,th {border:1px solid #ccc; padding:6px;}
-input,textarea {width:100%; margin:5px 0; padding:6px;}
+body {
+  font-family: Arial;
+  background: linear-gradient(135deg,#e8f5e9,#f1f8e9);
+}
+
+h2 {
+  text-align:center;
+  color:#2e7d32;
+}
+
+.card {
+  background:white;
+  margin:12px;
+  padding:12px;
+  border-radius:12px;
+  box-shadow:0 4px 10px rgba(0,0,0,0.1);
+  border-left:6px solid #66bb6a;
+}
+
+button {
+  background:#43a047;
+  color:white;
+  border:none;
+  padding:8px 12px;
+  border-radius:6px;
+  cursor:pointer;
+}
+
+button:hover {
+  background:#2e7d32;
+}
+
+table {
+  width:100%;
+  border-collapse:collapse;
+}
+
+th {
+  background:#81c784;
+  color:white;
+}
+
+td,th {
+  border:1px solid #ccc;
+  padding:6px;
+  text-align:center;
+}
+
+input,textarea {
+  width:100%;
+  padding:6px;
+  margin:4px 0;
+}
+
+img {
+  width:60px;
+  border-radius:6px;
+}
 </style>
+
 </head>
 
 <body>
 
-<h2 style="text-align:center;">🌾 Full Breeding Intelligence System</h2>
+<h2>🌾 Breeding Intelligence System</h2>
 
-<!-- ================= DATA ENTRY ================= -->
+<!-- ================= DATA ================= -->
 <div class="card">
-<h3>Excel Data Entry</h3>
-<textarea id="excelInput" rows="6" placeholder="Line,Type,Rep,Days to 50% Flowering,Yield"></textarea>
+<h3>📥 Excel Entry</h3>
+<textarea id="excelInput" rows="5"></textarea>
+
 <button onclick="importExcel()">Import</button>
 <button onclick="clearData()">Clear</button>
 <button onclick="exportExcel()">Export Excel</button>
@@ -31,55 +86,47 @@ input,textarea {width:100%; margin:5px 0; padding:6px;}
 
 <!-- ================= TABLE ================= -->
 <div class="card">
-<h3>Editable Table</h3>
+<h3>📊 Editable Table</h3>
 <div id="tableView"></div>
 <button onclick="addRow()">Add Row</button>
 </div>
 
-<!-- ================= CLASSIFICATION ================= -->
-<div class="card">
-<h3>Parent Classification</h3>
-<button onclick="runClassification()">Run</button>
-<div id="classResult"></div>
-</div>
-
-<!-- ================= SELECTION INDEX ================= -->
-<div class="card">
-<h3>Selection Index</h3>
-<input id="traitsListInput" placeholder="yield,height">
-<input id="weightsInput" placeholder="0.7,0.3">
-<button onclick="runSelectionIndex()">Run</button>
-<div id="siResult"></div>
-</div>
-
 <!-- ================= ANOVA ================= -->
 <div class="card">
-<h3>ANOVA</h3>
-<input id="anovaTrait" placeholder="Trait">
+<h3>📈 ANOVA</h3>
+<input id="anovaTrait" placeholder="Trait name">
 <button onclick="runANOVA()">Run</button>
 <div id="anovaResult"></div>
 </div>
 
-<!-- ================= EXPERIMENTAL DESIGN ================= -->
+<!-- ================= SELECTION INDEX ================= -->
 <div class="card">
-<h3>Experimental Design (RBD Layout)</h3>
-<input id="treatments" placeholder="No. of Treatments">
-<input id="replications" placeholder="Replications">
-<button onclick="generateRBD()">Generate Layout</button>
-<div id="rbdResult"></div>
+<h3>🎯 Selection Index</h3>
+<input id="traitsListInput" placeholder="yield,height">
+<input id="weightsInput" placeholder="0.7,0.3">
+<button onclick="runSI()">Run</button>
+<div id="siResult"></div>
 </div>
 
-<!-- ================= GCA SCA ================= -->
+<!-- ================= CLASSIFICATION ================= -->
 <div class="card">
-<h3>GCA / SCA</h3>
-<input id="gcaTrait" placeholder="Trait">
-<button onclick="runGCA()">Run</button>
-<div id="gcaResult"></div>
+<h3>🌱 Parent Classification</h3>
+<button onclick="runClassification()">Run</button>
+<div id="classResult"></div>
+</div>
+
+<!-- ================= RBD ================= -->
+<div class="card">
+<h3>🧪 Experimental Design (RBD)</h3>
+<input id="treatments" placeholder="Treatments">
+<input id="replications" placeholder="Replications">
+<button onclick="generateRBD()">Generate</button>
+<div id="rbdResult"></div>
 </div>
 
 <!-- ================= OUTCOME ================= -->
 <div class="card">
-<h3>Cross Outcome</h3>
+<h3>📌 Cross Outcome</h3>
 <input id="crossName" placeholder="A1 x R1">
 <input id="yieldVal" placeholder="Yield">
 <input id="lodgingVal" placeholder="Lodging">
@@ -90,51 +137,50 @@ input,textarea {width:100%; margin:5px 0; padding:6px;}
 
 <!-- ================= AI ================= -->
 <div class="card">
-<h3>AI Breeding Engine</h3>
-<button onclick="recommendNext()">Run AI</button>
-<div id="aiNext"></div>
+<h3>🤖 Breeding AI</h3>
+<button onclick="runAI()">Run AI</button>
+<div id="aiResult"></div>
 </div>
 
 <script>
 
-// ===== DATA STORAGE =====
+// ===== STORAGE =====
 function getData(){ return JSON.parse(localStorage.getItem("pbos")||"[]"); }
 function setData(d){ localStorage.setItem("pbos",JSON.stringify(d)); }
 
 // ===== IMPORT =====
 function importExcel(){
- let text=excelInput.value.trim();
- if(!text) return;
- let lines=text.split("\n");
- let headers=lines[0].split(",").map(h=>h.trim().toLowerCase());
- let data=getData();
+ let lines = excelInput.value.split("\n");
+ let headers = lines[0].split(",").map(x=>x.trim().toLowerCase());
+ let data = getData();
 
  for(let i=1;i<lines.length;i++){
-  let parts=lines[i].split(",");
+  let parts = lines[i].split(",");
   let traits=[];
   for(let j=3;j<headers.length;j++){
-    traits.push({name:headers[j],value:parts[j]});
+    traits.push({name:headers[j],value:parseFloat(parts[j])});
   }
-  data.push({id:parts[0],type:parts[1],rep:parts[2],traits:traits});
+  data.push({id:parts[0],type:parts[1],rep:parts[2],traits:traits,photo:""});
  }
  setData(data); loadTable();
 }
 
 // ===== TABLE =====
 function loadTable(){
- let data=getData();
- let html="<table><tr><th>Line</th><th>Type</th><th>Rep</th><th>Trait</th><th>Value</th><th>Delete</th></tr>";
+ let d=getData();
+ let html="<table><tr><th>Line</th><th>Type</th><th>Rep</th><th>Trait</th><th>Value</th><th>Photo</th><th>Delete</th></tr>";
 
- data.forEach((e,i)=>{
-  e.traits.forEach((t,j)=>{
-   html+=`<tr>
-   <td contenteditable onblur="saveTable()">${e.id}</td>
-   <td contenteditable onblur="saveTable()">${e.type}</td>
-   <td contenteditable onblur="saveTable()">${e.rep}</td>
-   <td contenteditable onblur="saveTable()">${t.name}</td>
-   <td contenteditable onblur="saveTable()">${t.value}</td>
-   <td><button onclick="deleteRow(${i})">X</button></td>
-   </tr>`;
+ d.forEach((e,i)=>{
+  e.traits.forEach((t)=>{
+    html+=`<tr>
+    <td contenteditable onblur="saveTable()">${e.id}</td>
+    <td contenteditable onblur="saveTable()">${e.type}</td>
+    <td contenteditable onblur="saveTable()">${e.rep}</td>
+    <td contenteditable onblur="saveTable()">${t.name}</td>
+    <td contenteditable onblur="saveTable()">${t.value}</td>
+    <td><input type="file" onchange="uploadPhoto(event,${i})">${e.photo?`<img src="${e.photo}">`:""}</td>
+    <td><button onclick="deleteRow(${i})">X</button></td>
+    </tr>`;
   });
  });
 
@@ -144,18 +190,19 @@ function loadTable(){
 
 function saveTable(){
  let rows=document.querySelectorAll("#tableView tr");
- let data=[];
+ let newData=[];
  rows.forEach((r,i)=>{
   if(i===0) return;
   let c=r.querySelectorAll("td");
-  data.push({
-   id:c[0].innerText,
-   type:c[1].innerText,
-   rep:c[2].innerText,
-   traits:[{name:c[3].innerText,value:c[4].innerText}]
+  newData.push({
+    id:c[0].innerText,
+    type:c[1].innerText,
+    rep:c[2].innerText,
+    traits:[{name:c[3].innerText,value:parseFloat(c[4].innerText)}],
+    photo:""
   });
  });
- setData(data);
+ setData(newData);
 }
 
 function addRow(){
@@ -165,11 +212,28 @@ function addRow(){
 }
 
 function deleteRow(i){
- let d=getData(); d.splice(i,1); setData(d); loadTable();
+ let d=getData();
+ d.splice(i,1);
+ setData(d);
+ loadTable();
 }
 
-// ===== CLEAR =====
-function clearData(){ localStorage.clear(); loadTable(); }
+function clearData(){
+ localStorage.clear();
+ loadTable();
+}
+
+// ===== PHOTO =====
+function uploadPhoto(e,i){
+ let reader=new FileReader();
+ reader.onload=function(){
+  let d=getData();
+  d[i].photo=reader.result;
+  setData(d);
+  loadTable();
+ }
+ reader.readAsDataURL(e.target.files[0]);
+}
 
 // ===== EXPORT =====
 function exportExcel(){
@@ -179,21 +243,85 @@ function exportExcel(){
  let blob=new Blob([csv]);
  let a=document.createElement("a");
  a.href=URL.createObjectURL(blob);
- a.download="data.csv"; a.click();
+ a.download="data.csv";
+ a.click();
 }
 
 function exportWord(){
  let d=getData();
  let text="Breeding Data\n\n";
  d.forEach(e=>{
-  text+=`${e.id} (${e.type})\n`;
-  e.traits.forEach(t=>text+=`${t.name}: ${t.value}\n`);
+  text+=`${e.id}\n`;
+  e.traits.forEach(t=>text+=`${t.name}:${t.value}\n`);
   text+="\n";
  });
  let blob=new Blob([text]);
  let a=document.createElement("a");
  a.href=URL.createObjectURL(blob);
- a.download="data.doc"; a.click();
+ a.download="data.doc";
+ a.click();
+}
+
+// ===== ANOVA =====
+function runANOVA(){
+ let trait=anovaTrait.value.toLowerCase();
+ let d=getData();
+ let arr=[];
+
+ d.forEach(e=>{
+  e.traits.forEach(t=>{
+    if(t.name==trait){
+      arr.push({line:e.id,value:t.value});
+    }
+  });
+ });
+
+ let gm=arr.reduce((a,b)=>a+b.value,0)/arr.length;
+
+ let groups={};
+ arr.forEach(x=>{
+  if(!groups[x.line]) groups[x.line]=[];
+  groups[x.line].push(x.value);
+ });
+
+ let means={};
+ for(let k in groups){
+  means[k]=groups[k].reduce((a,b)=>a+b,0)/groups[k].length;
+ }
+
+ let out="";
+ for(let k in means){
+  out+=`${k}: ${means[k].toFixed(2)}<br>`;
+ }
+
+ anovaResult.innerHTML=out;
+}
+
+// ===== SELECTION INDEX =====
+function runSI(){
+ let traits=traitsListInput.value.split(",");
+ let weights=weightsInput.value.split(",").map(Number);
+ let d=getData();
+
+ let map={};
+
+ d.forEach(e=>{
+  if(!map[e.id]) map[e.id]={};
+  e.traits.forEach(t=>{
+    if(traits.includes(t.name)){
+      map[e.id][t.name]=t.value;
+    }
+  });
+ });
+
+ let out="";
+ Object.keys(map).forEach(k=>{
+  let score=0;
+  traits.forEach((t,i)=>score+=weights[i]*(map[k][t]||0));
+  out+=`${k}: ${score.toFixed(2)}<br>`;
+ });
+
+ siResult.innerHTML=out;
 }
 
 // ===== CLASSIFICATION =====
@@ -203,42 +331,12 @@ function runClassification(){
  d.forEach(e=>{
   let score=0;
   e.traits.forEach(t=>{
-   if(t.name=="stigma exertion" && t.value>20) score+=2;
-   if(t.name=="pollen shedding" && t.value>5) score+=2;
+    if(t.name=="stigma exertion" && t.value>20) score+=2;
+    if(t.name=="pollen shedding" && t.value>5) score+=2;
   });
-  out+=`${e.id} → ${score>=2?"Selected":"Rejected"}<br>`;
+  out+=`${e.id}: ${score>=2?"Selected":"Rejected"}<br>`;
  });
  classResult.innerHTML=out;
-}
-
-// ===== SELECTION INDEX =====
-function runSelectionIndex(){
- let traits=traitsListInput.value.split(",");
- let weights=weightsInput.value.split(",").map(Number);
- let d=getData();
- let map={};
-
- d.forEach(e=>{
-  if(!map[e.id]) map[e.id]={};
-  e.traits.forEach(t=>{
-   if(traits.includes(t.name)){
-    map[e.id][t.name]=+t.value;
-   }
-  });
- });
-
- let out="";
- Object.keys(map).forEach(k=>{
-  let score=0;
-  traits.forEach((t,i)=>score+=weights[i]*(map[k][t]||0));
-  out+=`${k}: ${score}<br>`;
- });
- siResult.innerHTML=out;
-}
-
-// ===== ANOVA =====
-function runANOVA(){
- anovaResult.innerHTML="Basic ANOVA placeholder (full stats can be extended)";
 }
 
 // ===== RBD =====
@@ -247,17 +345,11 @@ function generateRBD(){
  let r=+replications.value;
  let out="";
  for(let i=1;i<=r;i++){
-  out+="Rep "+i+": ";
   let arr=[...Array(t).keys()].map(x=>"T"+(x+1));
   arr.sort(()=>Math.random()-0.5);
-  out+=arr.join(" , ")+"<br>";
+  out+="Rep "+i+": "+arr.join(", ")+"<br>";
  }
  rbdResult.innerHTML=out;
-}
-
-// ===== GCA =====
-function runGCA(){
- gcaResult.innerHTML="Basic GCA placeholder";
 }
 
 // ===== OUTCOME =====
@@ -274,15 +366,17 @@ function saveOutcome(){
 }
 
 // ===== AI =====
-function recommendNext(){
+function runAI(){
  let o=JSON.parse(localStorage.getItem("outcomes")||"[]");
  let out="";
+
  o.forEach(x=>{
-  if(x.lodging=="severe") out+=`${x.cross} → Use strong parent<br>`;
-  if(x.disease=="high") out+=`${x.cross} → Add tolerant line<br>`;
-  if(x.yield>3) out+=`${x.cross} → Good cross refine<br>`;
+  if(x.lodging=="severe") out+=`${x.cross}: Improve strength<br>`;
+  if(x.disease=="high") out+=`${x.cross}: Add tolerant line<br>`;
+  if(x.yield>3) out+=`${x.cross}: Good cross refine<br>`;
  });
- aiNext.innerHTML=out;
+
+ aiResult.innerHTML=out;
 }
 
 // INIT
