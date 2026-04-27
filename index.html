@@ -10,691 +10,310 @@ body { font-family: Arial; background:#f5f5f5; margin:0;}
 header { background:#2e7d32; color:white; padding:12px; text-align:center;}
 .container { padding:10px;}
 .card { background:white; padding:12px; margin-bottom:10px; border-radius:10px;}
-input, select, textarea, button {
+input, textarea, button {
   width:100%; padding:10px; margin:5px 0;
   border-radius:6px; border:1px solid #ccc;
 }
 button { background:#2e7d32; color:white; font-weight:bold;}
 table { width:100%; border-collapse:collapse; }
-th, td { border:1px solid #ccc; padding:5px; text-align:center;}
+th, td { border:1px solid #ccc; padding:6px; text-align:center;}
 </style>
 </head>
 
 <body>
 
-<header>
-<h2>🌾 PBOS - Breeding System</h2>
-</header>
+<header><h2>🌾 PBOS - Breeding System</h2></header>
 
 <div class="container">
 
 <div class="card">
-<h3>Add Entry</h3>
-
-<input id="lineId" placeholder="Line ID">
-<select id="lineType">
-<option>A Line</option>
-<option>B Line</option>
-<option>R Line</option>
-<option>Hybrid</option>
-</select>
-
-<select id="rep">
-<option>Rep 1</option>
-<option>Rep 2</option>
-<option>Rep 3</option>
-</select>
-
-<input id="traitName" placeholder="Trait Name">
-<input id="traitValue" placeholder="Value">
-<input id="traitUnit" placeholder="Unit (cm, g, %, etc)">
-
-<button onclick="addTrait()">Add Trait</button>
-<div id="traitsList"></div>
-
-<button onclick="saveEntry()">Save Entry</button>
+<h3>Excel Data Entry</h3>
+<textarea id="excelInput" rows="6" placeholder="Line,Type,Rep,Height,Yield
+A1,A Line,Rep 1,100,25"></textarea>
+<button onclick="importExcelData()">Import</button>
 </div>
 
 <div class="card">
-<button onclick="clearAll()">Clear All Data</button>
-</div>
-
-<div class="card">
-<h3>Entries</h3>
-<div id="entries"></div>
-</div>
-
-<div class="card">
-<h3>Table View</h3>
+<h3>Editable Table</h3>
 <div id="tableView"></div>
 </div>
 
 <div class="card">
-<h3>Excel Data Entry</h3>
-
-<textarea id="excelInput" rows="8" placeholder="Enter data like:
-Line,Type,Rep,Trait,Value,Unit
-A1,A Line,Rep 1,Height,100,cm
-A1,A Line,Rep 1,Yield,25,g"></textarea>
-
-<button onclick="importExcelData()">Import Data</button>
-
-</div>
-
-<div class="card">
-<h3>Mean</h3>
-<button onclick="calculateMean()">Calculate Mean</button>
-<div id="analysis"></div>
-</div>
-
-<div class="card">
-<h3>ANOVA (RBD)</h3>
-<input id="anovaTrait" placeholder="Enter Trait Name">
-<button onclick="runANOVA()">Run ANOVA</button>
+<h3>ANOVA</h3>
+<input id="anovaTrait" placeholder="Trait">
+<button onclick="runANOVA()">Run</button>
 <div id="anovaResult"></div>
 </div>
 
 <div class="card">
-<h3>Line × Tester (GCA / SCA)</h3>
-
-<input id="gcaTrait" placeholder="Enter Trait Name">
-<button onclick="runGCA()">Run GCA/SCA</button>
-
+<h3>GCA / SCA</h3>
+<input id="gcaTrait" placeholder="Trait">
+<button onclick="runGCA()">Run</button>
 <div id="gcaResult"></div>
 </div>
 
 <div class="card">
-<h3>Multi-Trait Selection Index</h3>
-
-<input id="traitsListInput" placeholder="Traits (comma separated: yield,height)">
-<input id="weightsInput" placeholder="Weights (same order: 0.6,0.4)">
-
-<button onclick="runSelectionIndex()">Calculate Index</button>
-
+<h3>Selection Index</h3>
+<input id="traitsListInput" placeholder="yield,height">
+<input id="weightsInput" placeholder="0.7,0.3">
+<button onclick="runSelectionIndex()">Run</button>
 <div id="siResult"></div>
 </div>
+
 </div>
 
 <script>
 
-let currentTraits = [];
-
-function addTrait(){
-  let name = traitName.value;
-  let value = traitValue.value;
-  let unit = traitUnit.value;
-
-  if(name && value){
-    currentTraits.push({name,value,unit});
-    renderTraits();
-  }
-
-  traitName.value="";
-  traitValue.value="";
-  traitUnit.value="";
-}
-
-function renderTraits(){
-  traitsList.innerHTML = currentTraits.map(t =>
-    `<div>${t.name}: ${t.value}</div>`
-  ).join("");
-}
-
-function saveEntry(){
-  let entry = {
-    id: lineId.value,
-    type: lineType.value,
-    rep: rep.value,
-    traits: currentTraits
-  };
-
-  let data = JSON.parse(localStorage.getItem("pbos")||"[]");
-  data.push(entry);
-  localStorage.setItem("pbos", JSON.stringify(data));
-
-  currentTraits=[];
-  renderTraits();
-  loadEntries();
-}
-
-function loadEntries(){
-  let data = JSON.parse(localStorage.getItem("pbos")||"[]");
-
-  entries.innerHTML = data.map((e,index) =>
-    `<div class="card">
-      <b>${e.id}</b> (${e.type}) - ${e.rep}<br>
-      ${e.traits.map(t=>`${t.name}: ${t.value} ${t.unit || ""}`).join("<br>")}
-      <br><button onclick="deleteEntry(${index})">Delete</button>
-    </div>`
-  ).join("");
-
-  renderTable();
-}
-
-function deleteEntry(i){
-  let data = JSON.parse(localStorage.getItem("pbos")||"[]");
-  data.splice(i,1);
-  localStorage.setItem("pbos", JSON.stringify(data));
-  loadEntries();
-}
-
-function clearAll(){
-  localStorage.removeItem("pbos");
-  loadEntries();
-}
-
-function renderTable(){
-
-  let data = JSON.parse(localStorage.getItem("pbos")||"[]");
-
-  let html = `<table border="1">
-  <tr>
-    <th>Line</th>
-    <th>Type</th>
-    <th>Rep</th>
-    <th>Trait</th>
-    <th>Value</th>
-    <th>Unit</th>
-  </tr>`;
-
-  data.forEach((e)=>{
-    e.traits.forEach((t)=>{
-      html += `<tr>
-        <td contenteditable="true">${e.id}</td>
-        <td contenteditable="true">${e.type}</td>
-        <td contenteditable="true">${e.rep}</td>
-        <td contenteditable="true">${t.name}</td>
-        <td contenteditable="true">${t.value}</td>
-        <td contenteditable="true">${t.unit || ""}</td>
-      </tr>`;
-    });
-  });
-
-  html += "</table>";
-
-  html += `<br><button onclick="saveTable()">Save Changes</button>`;
-
-  document.getElementById("tableView").innerHTML = html;
-}
-  function saveTable(){
-
-  let rows = document.querySelectorAll("#tableView table tr");
-
-  let newData = [];
-
-  rows.forEach((row,i)=>{
-
-    if(i===0) return;
-
-    let cells = row.querySelectorAll("td");
-
-    let entry = {
-      id: cells[0].innerText,
-      type: cells[1].innerText,
-      rep: cells[2].innerText,
-      traits: [{
-        name: cells[3].innerText,
-        value: cells[4].innerText,
-        unit: cells[5].innerText
-      }]
-    };
-
-    newData.push(entry);
-  });
-
-  localStorage.setItem("pbos", JSON.stringify(newData));
-
-  loadEntries();
-
-  alert("Saved!");
-  }
-  
-  
-function calculateMean(){
-  let data = JSON.parse(localStorage.getItem("pbos")||"[]");
-  let result = {};
-
-  data.forEach(e=>{
-    e.traits.forEach(t=>{
-      let key = e.id + "-" + t.name;
-
-      if(!result[key]) result[key]={sum:0,count:0};
-
-      let val = parseFloat(t.value);
-      if(!isNaN(val)){
-        result[key].sum += val;
-        result[key].count++;
-      }
-    });
-  });
-
-  let out="";
-  for(let k in result){
-    let mean = result[k].sum/result[k].count;
-    out += `${k}: ${mean.toFixed(2)}<br>`;
-  }
-
-  analysis.innerHTML = out;
-}
-
-function runANOVA(){
-  let trait = anovaTrait.value;
-  let data = JSON.parse(localStorage.getItem("pbos")||"[]");
-
-  let filtered = [];
-
-  data.forEach(e=>{
-    e.traits.forEach(t=>{
-      if(t.name.toLowerCase() === trait.toLowerCase()){  // ✅ FIXED
-        let val=parseFloat(t.value);
-        if(!isNaN(val)){
-          filtered.push({line:e.id,rep:e.rep,value:val});
-        }
-      }
-    });
-  });
-
-  if(filtered.length===0){
-    anovaResult.innerHTML="No data";
-    return;
-  }
-
-  let total = filtered.reduce((a,b)=>a+b.value,0);
-  let gm = total/filtered.length;
-
-  let treat={}, reps={};
-
-  filtered.forEach(d=>{
-    if(!treat[d.line]) treat[d.line]=[];
-    if(!reps[d.rep]) reps[d.rep]=[];
-    treat[d.line].push(d.value);
-    reps[d.rep].push(d.value);
-  });
-
-  let tm={}, rm={};
-
-  for(let t in treat){
-    tm[t]=treat[t].reduce((a,b)=>a+b,0)/treat[t].length;
-  }
-
-  for(let r in reps){
-    rm[r]=reps[r].reduce((a,b)=>a+b,0)/reps[r].length;
-  }
-
-  let SST = filtered.reduce((s,d)=>s+Math.pow(d.value-gm,2),0);
-
-  let SSTr=0;
-  for(let t in tm){
-    SSTr += treat[t].length*Math.pow(tm[t]-gm,2);
-  }
-
-  let SSRep=0;
-  for(let r in rm){
-    SSRep += reps[r].length*Math.pow(rm[r]-gm,2);
-  }
-
-  let SSE = SST-SSTr-SSRep;
-
-  let t=Object.keys(treat).length;
-  let r=Object.keys(reps).length;
-
-  let dfError = (t-1)*(r-1);
-  let MSTr = SSTr/(t-1);
-  let MSE = dfError>0 ? SSE/dfError : 0;
-  let F = MSE!==0 ? MSTr/MSE : 0;
-  // ===== LSD CALCULATION =====
-
-let tValue = 2; // approx value (can refine later)
-let rRep = r;   // number of replications
-
-let LSD = MSE !== 0 ? tValue * Math.sqrt((2 * MSE) / rRep) : 0;
-
-  let out=`Grand Mean: ${gm.toFixed(2)}<br><br>`;
-
-  out+="Treatment Means:<br>";
-  for(let t in tm) out+=`${t}: ${tm[t].toFixed(2)}<br>`;
-
-  out+="<br>ANOVA:<br>";
-  out+=`LSD (approx): ${LSD.toFixed(2)}<br>`;
-  out+=`SS Treatment: ${SSTr.toFixed(2)}<br>`;
-  out+=`SS Rep: ${SSRep.toFixed(2)}<br>`;
-  out+=`SS Error: ${SSE.toFixed(2)}<br>`;
-  out+=`F: ${F.toFixed(2)}<br>`;
-  // ===== PAIRWISE COMPARISON =====
-
-out += "<br><b>Comparison (LSD test):</b><br>";
-
-let lines = Object.keys(tm);
-
-for(let i=0; i<lines.length; i++){
-  for(let j=i+1; j<lines.length; j++){
-
-    let l1 = lines[i];
-    let l2 = lines[j];
-
-    let diff = Math.abs(tm[l1] - tm[l2]);
-
-    let significance = diff > LSD ? "Significant ✅" : "Not Significant ❌";
-
-    out += `${l1} vs ${l2} → Diff: ${diff.toFixed(2)} → ${significance}<br>`;
-  }
-}
-// ===== RANKING + BEST LINE =====
-
-out += "<br><b>Ranking:</b><br>";
-
-// Convert means to array
-let ranking = Object.keys(tm).map(line => ({
-  line: line,
-  mean: tm[line]
-}));
-
-// Sort descending (highest first)
-ranking.sort((a,b)=>b.mean - a.mean);
-
-// Display ranking
-ranking.forEach((r,i)=>{
-  out += `${i+1}. ${r.line} → ${r.mean.toFixed(2)}<br>`;
-});
-
-// Highlight best line
-let best = ranking[0];
-
-out += `<br><b>Best Line:</b> ⭐ ${best.line} (Mean: ${best.mean.toFixed(2)})<br>`;
-  anovaResult.innerHTML=out;
-}
-
-loadEntries();
-
-function runGCA(){
-  let trait = gcaTrait.value.toLowerCase();
-  let data = JSON.parse(localStorage.getItem("pbos")||"[]");
-
-  let crosses = [];
-
-  data.forEach(e=>{
-    e.traits.forEach(t=>{
-      if(t.name.toLowerCase() === trait){
-        let val = parseFloat(t.value);
-        if(!isNaN(val) && e.type === "Hybrid"){
-          
-          let parts = e.id.split("x");
-
-          if(parts.length === 2){
-            let A = parts[0].trim();
-            let R = parts[1].trim();
-
-            crosses.push({
-              A:A,
-              R:R,
-              value:val
-            });
-          }
-        }
-      }
-    });
-  });
-
-  if(crosses.length === 0){
-    gcaResult.innerHTML = "No hybrid data found";
-    return;
-  }
-
-  // Grand Mean
-  let total = crosses.reduce((a,b)=>a+b.value,0);
-  let gm = total / crosses.length;
-
-  // A-line means (GCA A)
-  let Agroup = {};
-  crosses.forEach(c=>{
-    if(!Agroup[c.A]) Agroup[c.A]=[];
-    Agroup[c.A].push(c.value);
-  });
-
-  let GCA_A = {};
-  for(let a in Agroup){
-    let mean = Agroup[a].reduce((x,y)=>x+y,0)/Agroup[a].length;
-    GCA_A[a] = mean - gm;
-  }
-
-  // R-line means (GCA R)
-  let Rgroup = {};
-  crosses.forEach(c=>{
-    if(!Rgroup[c.R]) Rgroup[c.R]=[];
-    Rgroup[c.R].push(c.value);
-  });
-
-  let GCA_R = {};
-  for(let r in Rgroup){
-    let mean = Rgroup[r].reduce((x,y)=>x+y,0)/Rgroup[r].length;
-    GCA_R[r] = mean - gm;
-  }
-
-  // SCA
-  let SCA = [];
-
-  crosses.forEach(c=>{
-    let sca = c.value - gm - GCA_A[c.A] - GCA_R[c.R];
-    SCA.push({
-      cross: `${c.A} x ${c.R}`,
-      value: sca
-    });
-  });
-
-  // OUTPUT
-  let out = `<b>Grand Mean:</b> ${gm.toFixed(2)}<br><br>`;
-
-// ===== GCA A =====
-out += "<b>GCA (A lines):</b><br>";
-
-let A_ranking = Object.keys(GCA_A).map(a => ({
-  line: a,
-  val: GCA_A[a]
-}));
-
-A_ranking.sort((a,b)=>b.val-a.val);
-
-A_ranking.forEach((a,i)=>{
-  let tag = a.val > 0 ? "Good Combiner ✅" : "Poor ❌";
-  out += `${i+1}. ${a.line}: ${a.val.toFixed(2)} (${tag})<br>`;
-});
-
-let bestA = A_ranking[0];
-out += `<br>⭐ Best A Line: ${bestA.line}<br><br>`;
-
-// ===== GCA R =====
-out += "<b>GCA (R lines):</b><br>";
-
-let R_ranking = Object.keys(GCA_R).map(r => ({
-  line: r,
-  val: GCA_R[r]
-}));
-
-R_ranking.sort((a,b)=>b.val-a.val);
-
-R_ranking.forEach((r,i)=>{
-  let tag = r.val > 0 ? "Good Combiner ✅" : "Poor ❌";
-  out += `${i+1}. ${r.line}: ${r.val.toFixed(2)} (${tag})<br>`;
-});
-
-let bestR = R_ranking[0];
-out += `<br>⭐ Best R Line: ${bestR.line}<br><br>`;
-
-// ===== HYBRID RANKING =====
-out += "<b>Hybrid Ranking:</b><br>";
-
-let hybridRank = crosses.map(c => ({
-  cross: `${c.A} x ${c.R}`,
-  val: c.value
-}));
-
-hybridRank.sort((a,b)=>b.val-a.val);
-
-hybridRank.forEach((h,i)=>{
-  out += `${i+1}. ${h.cross}: ${h.val.toFixed(2)}<br>`;
-});
-
-let bestHybrid = hybridRank[0];
-out += `<br>🏆 Best Hybrid: ${bestHybrid.cross}<br><br>`;
-
-// ===== SCA =====
-out += "<b>SCA:</b><br>";
-
-SCA.forEach(s=>{
-  let tag = s.value > 0 ? "Good 🔥" : "Low ❌";
-  out += `${s.cross}: ${s.value.toFixed(2)} (${tag})<br>`;
-});
-
-// ===== VISUAL =====
-out += "<br><b>GCA A Visual:</b><br>";
-
-A_ranking.forEach(a=>{
-  let bars = "█".repeat(Math.max(0, Math.round(a.val)));
-  out += `${a.line}: ${bars}<br>`;
-});
-
-gcaResult.innerHTML = out;
-}
-function runSelectionIndex(){
-
-  let traits = document.getElementById("traitsListInput").value
-                .toLowerCase().split(",");
-
-  let weights = document.getElementById("weightsInput").value
-                .split(",").map(Number);
-
-  let data = JSON.parse(localStorage.getItem("pbos")||"[]");
-
-  let lineData = {};
-
-  // Collect trait values
-  data.forEach(e=>{
-    if(!lineData[e.id]) lineData[e.id] = {};
-
-    e.traits.forEach(t=>{
-      let name = t.name.toLowerCase();
-      let val = parseFloat(t.value);
-
-      if(traits.includes(name) && !isNaN(val)){
-        if(!lineData[e.id][name]) lineData[e.id][name]=[];
-        lineData[e.id][name].push(val);
-      }
-    });
-  });
-
-  // Calculate means
-  let means = {};
-
-  for(let line in lineData){
-    means[line]={};
-
-    traits.forEach(tr=>{
-      let arr = lineData[line][tr] || [];
-      let mean = arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : 0;
-      means[line][tr]=mean;
-    });
-  }
-
-  // Normalize (important!)
-  let norm = {};
-
-  traits.forEach(tr=>{
-    let values = Object.values(means).map(m=>m[tr]);
-    let max = Math.max(...values);
-    let min = Math.min(...values);
-
-    for(let line in means){
-      if(!norm[line]) norm[line]={};
-      let val = means[line][tr];
-
-      norm[line][tr] = (max-min) ? (val-min)/(max-min) : 0;
-    }
-  });
-
-  // Selection index
-  let SI = [];
-
-  for(let line in norm){
-    let score = 0;
-
-    traits.forEach((tr,i)=>{
-      score += weights[i] * norm[line][tr];
-    });
-
-    SI.push({line,score});
-  }
-
-  // Ranking
-  SI.sort((a,b)=>b.score-a.score);
-
-  // OUTPUT
-  let out = "<b>Selection Index Ranking:</b><br>";
-
-  SI.forEach((s,i)=>{
-    out += `${i+1}. ${s.line} → ${s.score.toFixed(3)}<br>`;
-  });
-
-  out += `<br>🏆 Best Line: ${SI[0].line}`;
-
-  document.getElementById("siResult").innerHTML = out;
-}
-
-  function importExcelData(){
-
-  let text = document.getElementById("excelInput").value.trim();
-
-  if(!text){
-    alert("No data entered");
-    return;
-  }
+// ================= IMPORT =================
+function importExcelData(){
+
+  let text = excelInput.value.trim();
+  if(!text) return;
 
   let lines = text.split("\n");
-
   let headers = lines[0].split(",").map(h=>h.trim().toLowerCase());
 
   let data = JSON.parse(localStorage.getItem("pbos")||"[]");
 
   for(let i=1;i<lines.length;i++){
-
     let parts = lines[i].split(",").map(x=>x.trim());
 
-    if(parts.length < 4) continue;
-
-    let id = parts[0];
-    let type = parts[1];
-    let rep = parts[2];
-
     let traits = [];
-
     for(let j=3;j<headers.length;j++){
-
-      let value = parts[j];
-
-      if(value !== ""){
-        traits.push({
-          name: headers[j],
-          value: value,
-          unit: ""   // optional for now
-        });
+      if(parts[j]){
+        traits.push({name:headers[j],value:parts[j],unit:""});
       }
     }
 
-    let entry = {
-      id: id,
-      type: type,
-      rep: rep,
+    data.push({
+      id: parts[0],
+      type: parts[1],
+      rep: parts[2],
       traits: traits
-    };
-
-    data.push(entry);
+    });
   }
 
   localStorage.setItem("pbos", JSON.stringify(data));
-
   loadEntries();
+}
 
-  alert("Excel Data Imported (Multi-trait)");
+// ================= TABLE =================
+function renderTable(){
+
+  let data = JSON.parse(localStorage.getItem("pbos")||"[]");
+
+  let html="<table><tr><th>Line</th><th>Type</th><th>Rep</th><th>Trait</th><th>Value</th><th>Unit</th></tr>";
+
+  data.forEach(e=>{
+    e.traits.forEach(t=>{
+      html+=`<tr>
+        <td contenteditable>${e.id}</td>
+        <td contenteditable>${e.type}</td>
+        <td contenteditable>${e.rep}</td>
+        <td contenteditable>${t.name}</td>
+        <td contenteditable>${t.value}</td>
+        <td contenteditable>${t.unit||""}</td>
+      </tr>`;
+    });
+  });
+
+  html+="</table><br><button onclick='saveTable()'>Save Changes</button>";
+
+  tableView.innerHTML=html;
+}
+
+function saveTable(){
+
+  let rows=document.querySelectorAll("#tableView table tr");
+  let newData=[];
+
+  rows.forEach((r,i)=>{
+    if(i===0) return;
+
+    let c=r.querySelectorAll("td");
+
+    newData.push({
+      id:c[0].innerText,
+      type:c[1].innerText,
+      rep:c[2].innerText,
+      traits:[{
+        name:c[3].innerText,
+        value:c[4].innerText,
+        unit:c[5].innerText
+      }]
+    });
+  });
+
+  localStorage.setItem("pbos", JSON.stringify(newData));
+  loadEntries();
+}
+
+// ================= ANOVA =================
+function runANOVA(){
+
+  let trait=anovaTrait.value.toLowerCase();
+  let data=JSON.parse(localStorage.getItem("pbos")||"[]");
+
+  let arr=[];
+  data.forEach(e=>{
+    e.traits.forEach(t=>{
+      if(t.name.toLowerCase()==trait){
+        arr.push({line:e.id,rep:e.rep,value:+t.value});
+      }
+    });
+  });
+
+  if(!arr.length) return;
+
+  let gm=arr.reduce((a,b)=>a+b.value,0)/arr.length;
+
+  let tm={}, reps={};
+
+  arr.forEach(d=>{
+    if(!tm[d.line]) tm[d.line]=[];
+    if(!reps[d.rep]) reps[d.rep]=[];
+    tm[d.line].push(d.value);
+    reps[d.rep].push(d.value);
+  });
+
+  let means={};
+  for(let k in tm){
+    means[k]=tm[k].reduce((a,b)=>a+b,0)/tm[k].length;
   }
+
+  let SST=arr.reduce((s,d)=>s+(d.value-gm)**2,0);
+
+  let SSTr=0;
+  for(let k in means){
+    SSTr+=tm[k].length*(means[k]-gm)**2;
+  }
+
+  let SSE=SST-SSTr;
+
+  let MSE=SSE/(arr.length-Object.keys(tm).length);
+  let MSTr=SSTr/(Object.keys(tm).length-1);
+  let F=MSTr/MSE;
+
+  let LSD=2*Math.sqrt((2*MSE)/3);
+
+  let out="Means:<br>";
+  for(let k in means) out+=`${k}: ${means[k].toFixed(2)}<br>`;
+
+  out+=`<br>F: ${F.toFixed(2)}<br>LSD: ${LSD.toFixed(2)}<br><br>`;
+
+  let keys=Object.keys(means);
+  for(let i=0;i<keys.length;i++){
+    for(let j=i+1;j<keys.length;j++){
+      let d=Math.abs(means[keys[i]]-means[keys[j]]);
+      out+=`${keys[i]} vs ${keys[j]} → ${d.toFixed(2)} ${(d>LSD)?"✔":"✖"}<br>`;
+    }
+  }
+
+  anovaResult.innerHTML=out;
+}
+
+// ================= GCA =================
+function runGCA(){
+
+  let trait=gcaTrait.value.toLowerCase();
+  let data=JSON.parse(localStorage.getItem("pbos")||"[]");
+
+  let crosses=[];
+
+  data.forEach(e=>{
+    if(e.type=="Hybrid"){
+      e.traits.forEach(t=>{
+        if(t.name.toLowerCase()==trait){
+          let [A,R]=e.id.split("x").map(x=>x.trim());
+          crosses.push({A,R,value:+t.value});
+        }
+      });
+    }
+  });
+
+  if(!crosses.length) return;
+
+  let gm=crosses.reduce((a,b)=>a+b.value,0)/crosses.length;
+
+  let A={},R={};
+
+  crosses.forEach(c=>{
+    if(!A[c.A]) A[c.A]=[];
+    if(!R[c.R]) R[c.R]=[];
+    A[c.A].push(c.value);
+    R[c.R].push(c.value);
+  });
+
+  let GCA_A={},GCA_R={};
+
+  for(let k in A){
+    GCA_A[k]=(A[k].reduce((a,b)=>a+b,0)/A[k].length)-gm;
+  }
+
+  for(let k in R){
+    GCA_R[k]=(R[k].reduce((a,b)=>a+b,0)/R[k].length)-gm;
+  }
+
+  let out=`Grand Mean: ${gm.toFixed(2)}<br><br>`;
+
+  for(let k in GCA_A) out+=`A ${k}: ${GCA_A[k].toFixed(2)}<br>`;
+  out+="<br>";
+  for(let k in GCA_R) out+=`R ${k}: ${GCA_R[k].toFixed(2)}<br>`;
+
+  gcaResult.innerHTML=out;
+}
+
+// ================= SELECTION INDEX =================
+function runSelectionIndex(){
+
+  let traits=traitsListInput.value.toLowerCase().split(",");
+  let weights=weightsInput.value.split(",").map(Number);
+
+  let data=JSON.parse(localStorage.getItem("pbos")||"[]");
+
+  let map={};
+
+  data.forEach(e=>{
+    if(!map[e.id]) map[e.id]={};
+
+    e.traits.forEach(t=>{
+      let val=+t.value;
+      if(traits.includes(t.name.toLowerCase())){
+        if(!map[e.id][t.name]) map[e.id][t.name]=[];
+        map[e.id][t.name].push(val);
+      }
+    });
+  });
+
+  let score=[];
+
+  for(let line in map){
+    let s=0;
+
+    traits.forEach((tr,i)=>{
+      let arr=map[line][tr]||[];
+      let m=arr.length?arr.reduce((a,b)=>a+b,0)/arr.length:0;
+      s+=weights[i]*m;
+    });
+
+    score.push({line,s});
+  }
+
+  score.sort((a,b)=>b.s-a.s);
+
+  let out="";
+  score.forEach((x,i)=> out+=`${i+1}. ${x.line} → ${x.s.toFixed(2)}<br>`);
+
+  siResult.innerHTML=out;
+}
+
+// ================= INIT =================
+function loadEntries(){
+  renderTable();
+}
+
+loadEntries();
+
 </script>
 
 </body>
