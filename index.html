@@ -77,6 +77,26 @@ A1,A Line,Rep 1,100,25"></textarea>
 
 <div id="aiResult"></div>
 </div>
+
+  <div class="card">
+<h3>Cross Outcome (Field Feedback)</h3>
+
+<input id="crossName" placeholder="A12 x R45">
+<input id="yieldVal" placeholder="Yield (q/acre)">
+<input id="lodgingVal" placeholder="Lodging (none/moderate/severe)">
+<input id="diseaseVal" placeholder="Disease (low/medium/high)">
+<input id="notesVal" placeholder="Notes">
+
+<button onclick="saveOutcome()">Save Outcome</button>
+
+<div id="outcomeMsg"></div>
+  </div>
+
+  <div class="card">
+<h3>AI: Next Cross Strategy</h3>
+<button onclick="recommendNext()">Recommend</button>
+<div id="aiNext"></div>
+  </div>
   
 </div>
 
@@ -558,6 +578,141 @@ loadEntries();
   }
 
   document.getElementById("aiResult").innerHTML = response;
+  }
+  function saveOutcome(){
+
+  let outcomes = JSON.parse(localStorage.getItem("outcomes")||"[]");
+
+  outcomes.push({
+    cross: crossName.value.trim(),
+    yield: parseFloat(yieldVal.value)||0,
+    lodging: (lodgingVal.value||"").toLowerCase(),
+    disease: (diseaseVal.value||"").toLowerCase(),
+    notes: (notesVal.value||"").toLowerCase(),
+    ts: Date.now()
+  });
+
+  localStorage.setItem("outcomes", JSON.stringify(outcomes));
+
+  outcomeMsg.innerHTML = "Saved";
+  }
+  function recommendNext(){
+
+  let outcomes = JSON.parse(localStorage.getItem("outcomes")||"[]");
+  let data = JSON.parse(localStorage.getItem("pbos")||"[]");
+
+  if(!outcomes.length){
+    aiNext.innerHTML = "No past outcomes yet";
+    return;
+  }
+
+  // --- Aggregate issues by cross ---
+  let issues = {};
+
+  outcomes.forEach(o=>{
+    if(!issues[o.cross]) issues[o.cross] = {lodging:0,disease:0,good:0};
+
+    if(o.lodging==="severe" || o.lodging==="moderate") issues[o.cross].lodging++;
+    if(o.disease==="high") issues[o.cross].disease++;
+    if(o.yield>=3) issues[o.cross].good++;
+  });
+
+  // --- Helper: get parent traits (means) ---
+  function getLineMean(lineId, trait){
+    let vals = [];
+    data.forEach(e=>{
+      if(e.id===lineId){
+        e.traits.forEach(t=>{
+          if(t.name.toLowerCase()===trait) vals.push(parseFloat(t.value));
+        });
+      }
+    });
+    if(!vals.length) return null;
+    return vals.reduce((a,b)=>a+b,0)/vals.length;
+  }
+
+  // --- Build candidate A and R pools (basic filters) ---
+  let A_pool = [...new Set(data.filter(e=>e.type==="A Line").map(e=>e.id))];
+  let R_pool = [...new Set(data.filter(e=>e.type==="R Line").map(e=>e.id))];
+
+  let suggestions = [];
+
+  Object.keys(issues).forEach(cross=>{
+    let [A,R] = cross.split("x").map(s=>s.trim());
+
+    let tag = issues[cross];
+
+    // Base: keep heterotic pattern if it showed good yield at least once
+    let keepPattern = tag.good > 0;
+
+    // --- Fix strategies ---
+    let fixes = [];
+
+    if(tag.lodging>0){
+      fixes.push("reduce_height_and_increase_strength");
+    }
+    if(tag.disease>0){
+      fixes.push("introduce_disease_tolerance");
+    }
+
+    // --- Generate alternatives ---
+    A_pool.forEach(a2=>{
+      R_pool.forEach(r2=>{
+
+        // Start from same pattern if possible
+        if(keepPattern){
+          // keep one parent, change the other
+          if(!(a2===A || r2===R)) return;
+        }
+
+        // --- Apply lodging fix ---
+        if(fixes.includes("reduce_height_and_increase_strength")){
+          let hA = getLineMean(a2,"plant height");
+          let hR = getLineMean(r2,"plant height");
+          let tillA = getLineMean(a2,"tiller per plant");
+          let tillR = getLineMean(r2,"tiller per plant");
+
+          // prefer shorter + adequate tillering
+          if(hA && hA>135) return;
+          if(hR && hR>135) return;
+          if(tillA && tillA<8) return;
+          if(tillR && tillR<8) return;
+        }
+
+        // --- Apply disease fix (proxy: vigor + density if you don’t store resistance yet) ---
+        if(fixes.includes("introduce_disease_tolerance")){
+          let vigA = getLineMean(a2,"vigour");
+          let vigR = getLineMean(r2,"vigour");
+          // simple proxy: avoid very low vigor
+          if(vigA!==null && vigA<1) return;
+          if(vigR!==null && vigR<1) return;
+        }
+
+        suggestions.push({
+          cross: `${a2} x ${r2}`,
+          reason: `${cross} → fixes: ${fixes.join(", ") || "optimize"}`
+        });
+      });
+    });
+
+  });
+
+  // Deduplicate & limit
+  let seen = new Set();
+  let uniq = [];
+  suggestions.forEach(s=>{
+    if(!seen.has(s.cross)){
+      seen.add(s.cross);
+      uniq.push(s);
+    }
+  });
+
+  let out = "<b>Recommended Next Crosses:</b><br>";
+  uniq.slice(0,10).forEach(s=>{
+    out += `${s.cross} → ${s.reason}<br>`;
+  });
+
+  aiNext.innerHTML = out || "No suggestions";
   }
 
 </script>
