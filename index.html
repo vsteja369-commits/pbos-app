@@ -2,207 +2,106 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>🌾 Breeding Intelligence System</title>
+<title>🌾 Advanced Breeding Intelligence</title>
 
 <style>
-body {
-  font-family: Arial;
-  background: linear-gradient(135deg,#e8f5e9,#f1f8e9);
-}
-
-h2 {
-  text-align:center;
-  color:#2e7d32;
-}
-
-.card {
-  background:white;
-  margin:12px;
-  padding:12px;
-  border-radius:12px;
-  box-shadow:0 4px 10px rgba(0,0,0,0.1);
-  border-left:6px solid #66bb6a;
-}
-
-button {
-  background:#43a047;
-  color:white;
-  border:none;
-  padding:8px 12px;
-  border-radius:6px;
-  cursor:pointer;
-}
-
-button:hover {
-  background:#2e7d32;
-}
-
-table {
-  width:100%;
-  border-collapse:collapse;
-}
-
-th {
-  background:#81c784;
-  color:white;
-}
-
-td,th {
-  border:1px solid #ccc;
-  padding:6px;
-  text-align:center;
-}
-
-input,textarea {
-  width:100%;
-  padding:6px;
-  margin:4px 0;
-}
-
-img {
-  width:60px;
-  border-radius:6px;
-}
+body {font-family: Arial; background:#e8f5e9;}
+.card {background:white; margin:10px; padding:10px; border-radius:10px;}
+h2 {text-align:center; color:#2e7d32;}
+button {background:#43a047;color:white;border:none;padding:6px;border-radius:5px;}
+table {width:100%; border-collapse:collapse;}
+td,th {border:1px solid #ccc; padding:5px;}
 </style>
-
 </head>
 
 <body>
 
-<h2>🌾 Breeding Intelligence System</h2>
+<h2>🌾 Advanced Breeding System</h2>
 
-<!-- ================= DATA ================= -->
 <div class="card">
-<h3>📥 Excel Entry</h3>
-<textarea id="excelInput" rows="5"></textarea>
-
+<textarea id="excelInput" rows="5"></textarea><br>
 <button onclick="importExcel()">Import</button>
 <button onclick="clearData()">Clear</button>
-<button onclick="exportExcel()">Export Excel</button>
-<button onclick="exportWord()">Export Word</button>
 </div>
 
-<!-- ================= TABLE ================= -->
 <div class="card">
-<h3>📊 Editable Table</h3>
 <div id="tableView"></div>
 <button onclick="addRow()">Add Row</button>
 </div>
 
-<!-- ================= ANOVA ================= -->
 <div class="card">
-<h3>📈 ANOVA</h3>
-<input id="anovaTrait" placeholder="Trait name">
+<h3>ANOVA</h3>
+<input id="anovaTrait">
 <button onclick="runANOVA()">Run</button>
 <div id="anovaResult"></div>
 </div>
 
-<!-- ================= SELECTION INDEX ================= -->
 <div class="card">
-<h3>🎯 Selection Index</h3>
-<input id="traitsListInput" placeholder="yield,height">
-<input id="weightsInput" placeholder="0.7,0.3">
-<button onclick="runSI()">Run</button>
-<div id="siResult"></div>
-</div>
-
-<!-- ================= CLASSIFICATION ================= -->
-<div class="card">
-<h3>🌱 Parent Classification</h3>
-<button onclick="runClassification()">Run</button>
-<div id="classResult"></div>
-</div>
-
-<!-- ================= RBD ================= -->
-<div class="card">
-<h3>🧪 Experimental Design (RBD)</h3>
+<h3>Experimental Designs</h3>
 <input id="treatments" placeholder="Treatments">
 <input id="replications" placeholder="Replications">
-<button onclick="generateRBD()">Generate</button>
-<div id="rbdResult"></div>
+<button onclick="genRBD()">RBD</button>
+<button onclick="genCRD()">CRD</button>
+<div id="designOut"></div>
 </div>
 
-<!-- ================= OUTCOME ================= -->
 <div class="card">
-<h3>📌 Cross Outcome</h3>
+<h3>GCA / SCA</h3>
+<input id="gcaTrait">
+<button onclick="runGCA()">Run</button>
+<div id="gcaOut"></div>
+</div>
+
+<div class="card">
+<h3>Outcome AI</h3>
 <input id="crossName" placeholder="A1 x R1">
 <input id="yieldVal" placeholder="Yield">
+<input id="flowerVal" placeholder="Flowering days">
+<input id="tillerVal" placeholder="Tillers">
 <input id="lodgingVal" placeholder="Lodging">
-<input id="diseaseVal" placeholder="Disease">
 <button onclick="saveOutcome()">Save</button>
-<div id="outcomeMsg"></div>
-</div>
-
-<!-- ================= AI ================= -->
-<div class="card">
-<h3>🤖 Breeding AI</h3>
 <button onclick="runAI()">Run AI</button>
-<div id="aiResult"></div>
+<div id="aiOut"></div>
 </div>
 
 <script>
 
-// ===== STORAGE =====
-function getData(){ return JSON.parse(localStorage.getItem("pbos")||"[]"); }
-function setData(d){ localStorage.setItem("pbos",JSON.stringify(d)); }
+// ===== DATA =====
+function getData(){return JSON.parse(localStorage.getItem("pbos")||"[]");}
+function setData(d){localStorage.setItem("pbos",JSON.stringify(d));}
 
 // ===== IMPORT =====
 function importExcel(){
- let lines = excelInput.value.split("\n");
- let headers = lines[0].split(",").map(x=>x.trim().toLowerCase());
- let data = getData();
+ let lines=excelInput.value.split("\n");
+ let headers=lines[0].split(",");
+ let d=getData();
 
  for(let i=1;i<lines.length;i++){
-  let parts = lines[i].split(",");
+  let p=lines[i].split(",");
   let traits=[];
   for(let j=3;j<headers.length;j++){
-    traits.push({name:headers[j],value:parseFloat(parts[j])});
+   traits.push({name:headers[j].toLowerCase(),value:+p[j]});
   }
-  data.push({id:parts[0],type:parts[1],rep:parts[2],traits:traits,photo:""});
+  d.push({id:p[0],type:p[1],rep:p[2],traits});
  }
- setData(data); loadTable();
+ setData(d); loadTable();
 }
 
 // ===== TABLE =====
 function loadTable(){
  let d=getData();
- let html="<table><tr><th>Line</th><th>Type</th><th>Rep</th><th>Trait</th><th>Value</th><th>Photo</th><th>Delete</th></tr>";
-
+ let html="<table><tr><th>Line</th><th>Trait</th><th>Value</th></tr>";
  d.forEach((e,i)=>{
-  e.traits.forEach((t)=>{
-    html+=`<tr>
-    <td contenteditable onblur="saveTable()">${e.id}</td>
-    <td contenteditable onblur="saveTable()">${e.type}</td>
-    <td contenteditable onblur="saveTable()">${e.rep}</td>
-    <td contenteditable onblur="saveTable()">${t.name}</td>
-    <td contenteditable onblur="saveTable()">${t.value}</td>
-    <td><input type="file" onchange="uploadPhoto(event,${i})">${e.photo?`<img src="${e.photo}">`:""}</td>
-    <td><button onclick="deleteRow(${i})">X</button></td>
-    </tr>`;
+  e.traits.forEach(t=>{
+   html+=`<tr>
+   <td contenteditable>${e.id}</td>
+   <td contenteditable>${t.name}</td>
+   <td contenteditable>${t.value}</td>
+   </tr>`;
   });
  });
-
  html+="</table>";
  tableView.innerHTML=html;
-}
-
-function saveTable(){
- let rows=document.querySelectorAll("#tableView tr");
- let newData=[];
- rows.forEach((r,i)=>{
-  if(i===0) return;
-  let c=r.querySelectorAll("td");
-  newData.push({
-    id:c[0].innerText,
-    type:c[1].innerText,
-    rep:c[2].innerText,
-    traits:[{name:c[3].innerText,value:parseFloat(c[4].innerText)}],
-    photo:""
-  });
- });
- setData(newData);
 }
 
 function addRow(){
@@ -211,56 +110,7 @@ function addRow(){
  setData(d); loadTable();
 }
 
-function deleteRow(i){
- let d=getData();
- d.splice(i,1);
- setData(d);
- loadTable();
-}
-
-function clearData(){
- localStorage.clear();
- loadTable();
-}
-
-// ===== PHOTO =====
-function uploadPhoto(e,i){
- let reader=new FileReader();
- reader.onload=function(){
-  let d=getData();
-  d[i].photo=reader.result;
-  setData(d);
-  loadTable();
- }
- reader.readAsDataURL(e.target.files[0]);
-}
-
-// ===== EXPORT =====
-function exportExcel(){
- let d=getData();
- let csv="Line,Type,Rep,Trait,Value\n";
- d.forEach(e=>e.traits.forEach(t=>csv+=`${e.id},${e.type},${e.rep},${t.name},${t.value}\n`));
- let blob=new Blob([csv]);
- let a=document.createElement("a");
- a.href=URL.createObjectURL(blob);
- a.download="data.csv";
- a.click();
-}
-
-function exportWord(){
- let d=getData();
- let text="Breeding Data\n\n";
- d.forEach(e=>{
-  text+=`${e.id}\n`;
-  e.traits.forEach(t=>text+=`${t.name}:${t.value}\n`);
-  text+="\n";
- });
- let blob=new Blob([text]);
- let a=document.createElement("a");
- a.href=URL.createObjectURL(blob);
- a.download="data.doc";
- a.click();
-}
+function clearData(){localStorage.clear();loadTable();}
 
 // ===== ANOVA =====
 function runANOVA(){
@@ -270,9 +120,9 @@ function runANOVA(){
 
  d.forEach(e=>{
   e.traits.forEach(t=>{
-    if(t.name==trait){
-      arr.push({line:e.id,value:t.value});
-    }
+   if(t.name==trait){
+    arr.push({line:e.id,value:t.value});
+   }
   });
  });
 
@@ -284,99 +134,109 @@ function runANOVA(){
   groups[x.line].push(x.value);
  });
 
- let means={};
+ let out="Means:<br>";
  for(let k in groups){
-  means[k]=groups[k].reduce((a,b)=>a+b,0)/groups[k].length;
- }
-
- let out="";
- for(let k in means){
-  out+=`${k}: ${means[k].toFixed(2)}<br>`;
+  let m=groups[k].reduce((a,b)=>a+b,0)/groups[k].length;
+  out+=`${k}: ${m.toFixed(2)}<br>`;
  }
 
  anovaResult.innerHTML=out;
 }
 
-// ===== SELECTION INDEX =====
-function runSI(){
- let traits=traitsListInput.value.split(",");
- let weights=weightsInput.value.split(",").map(Number);
- let d=getData();
-
- let map={};
-
- d.forEach(e=>{
-  if(!map[e.id]) map[e.id]={};
-  e.traits.forEach(t=>{
-    if(traits.includes(t.name)){
-      map[e.id][t.name]=t.value;
-    }
-  });
- });
-
- let out="";
- Object.keys(map).forEach(k=>{
-  let score=0;
-  traits.forEach((t,i)=>score+=weights[i]*(map[k][t]||0));
-  out+=`${k}: ${score.toFixed(2)}<br>`;
- });
-
- siResult.innerHTML=out;
-}
-
-// ===== CLASSIFICATION =====
-function runClassification(){
- let d=getData();
- let out="";
- d.forEach(e=>{
-  let score=0;
-  e.traits.forEach(t=>{
-    if(t.name=="stigma exertion" && t.value>20) score+=2;
-    if(t.name=="pollen shedding" && t.value>5) score+=2;
-  });
-  out+=`${e.id}: ${score>=2?"Selected":"Rejected"}<br>`;
- });
- classResult.innerHTML=out;
-}
-
-// ===== RBD =====
-function generateRBD(){
- let t=+treatments.value;
- let r=+replications.value;
+// ===== DESIGNS =====
+function genRBD(){
+ let t=+treatments.value,r=+replications.value;
  let out="";
  for(let i=1;i<=r;i++){
   let arr=[...Array(t).keys()].map(x=>"T"+(x+1));
   arr.sort(()=>Math.random()-0.5);
   out+="Rep "+i+": "+arr.join(", ")+"<br>";
  }
- rbdResult.innerHTML=out;
+ designOut.innerHTML=out;
+}
+
+function genCRD(){
+ let t=+treatments.value;
+ let arr=[...Array(t).keys()].map(x=>"T"+(x+1));
+ arr.sort(()=>Math.random()-0.5);
+ designOut.innerHTML="CRD: "+arr.join(", ");
+}
+
+// ===== GCA SCA =====
+function runGCA(){
+ let trait=gcaTrait.value.toLowerCase();
+ let d=getData();
+ let crosses=[];
+
+ d.forEach(e=>{
+  if(e.type=="Hybrid"){
+   e.traits.forEach(t=>{
+    if(t.name==trait){
+     let [A,R]=e.id.split("x").map(x=>x.trim());
+     crosses.push({A,R,value:t.value});
+    }
+   });
+  }
+ });
+
+ let gm=crosses.reduce((a,b)=>a+b.value,0)/crosses.length;
+
+ let Amap={},Rmap={};
+
+ crosses.forEach(c=>{
+  if(!Amap[c.A])Amap[c.A]=[];
+  if(!Rmap[c.R])Rmap[c.R]=[];
+  Amap[c.A].push(c.value);
+  Rmap[c.R].push(c.value);
+ });
+
+ let out="GCA A:<br>";
+ for(let a in Amap){
+  let m=Amap[a].reduce((x,y)=>x+y,0)/Amap[a].length;
+  out+=`${a}: ${(m-gm).toFixed(2)}<br>`;
+ }
+
+ out+="<br>GCA R:<br>";
+ for(let r in Rmap){
+  let m=Rmap[r].reduce((x,y)=>x+y,0)/Rmap[r].length;
+  out+=`${r}: ${(m-gm).toFixed(2)}<br>`;
+ }
+
+ out+="<br>SCA:<br>";
+ crosses.forEach(c=>{
+  let sca=c.value-gm;
+  out+=`${c.A} x ${c.R}: ${sca.toFixed(2)}<br>`;
+ });
+
+ gcaOut.innerHTML=out;
 }
 
 // ===== OUTCOME =====
 function saveOutcome(){
- let o=JSON.parse(localStorage.getItem("outcomes")||"[]");
+ let o=JSON.parse(localStorage.getItem("out")||"[]");
  o.push({
   cross:crossName.value,
   yield:+yieldVal.value,
-  lodging:lodgingVal.value,
-  disease:diseaseVal.value
+  flowering:+flowerVal.value,
+  tiller:+tillerVal.value,
+  lodging:lodgingVal.value
  });
- localStorage.setItem("outcomes",JSON.stringify(o));
- outcomeMsg.innerHTML="Saved";
+ localStorage.setItem("out",JSON.stringify(o));
 }
 
 // ===== AI =====
 function runAI(){
- let o=JSON.parse(localStorage.getItem("outcomes")||"[]");
+ let o=JSON.parse(localStorage.getItem("out")||"[]");
  let out="";
 
  o.forEach(x=>{
-  if(x.lodging=="severe") out+=`${x.cross}: Improve strength<br>`;
-  if(x.disease=="high") out+=`${x.cross}: Add tolerant line<br>`;
-  if(x.yield>3) out+=`${x.cross}: Good cross refine<br>`;
+  if(x.lodging=="severe") out+=`${x.cross}: reduce height<br>`;
+  if(x.flowering>130) out+=`${x.cross}: too late<br>`;
+  if(x.tiller<8) out+=`${x.cross}: improve tillering<br>`;
+  if(x.yield>3) out+=`${x.cross}: good cross refine<br>`;
  });
 
- aiResult.innerHTML=out;
+ aiOut.innerHTML=out;
 }
 
 // INIT
