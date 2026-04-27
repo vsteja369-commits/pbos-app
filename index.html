@@ -106,21 +106,36 @@ function renderTable(){
 
   data.forEach(e=>{
     e.traits.forEach(t=>{
-      html+=`<tr>
-        <td contenteditable>${e.id}</td>
-        <td contenteditable>${e.type}</td>
-        <td contenteditable>${e.rep}</td>
-        <td contenteditable>${t.name}</td>
-        <td contenteditable>${t.value}</td>
-        <td contenteditable>${t.unit||""}</td>
-      </tr>`;
+      html += `<tr>
+  <td contenteditable onblur="autoSaveTable()">${e.id}</td>
+  <td contenteditable onblur="autoSaveTable()">${e.type}</td>
+  <td contenteditable onblur="autoSaveTable()">${e.rep}</td>
+  <td contenteditable onblur="autoSaveTable()">${t.name}</td>
+  <td contenteditable onblur="autoSaveTable()">${t.value}</td>
+  <td contenteditable onblur="autoSaveTable()">${t.unit || ""}</td>
+</tr>`;
     });
   });
 
-  html+="</table><br><button onclick='saveTable()'>Save Changes</button>";
+html+="</table><br><button onclick='addRow()'>Add Row</button>";
 
   tableView.innerHTML=html;
 }
+  function addRow(){
+
+  let data = JSON.parse(localStorage.getItem("pbos")||"[]");
+
+  data.push({
+    id:"",
+    type:"",
+    rep:"",
+    traits:[{name:"",value:"",unit:""}]
+  });
+
+  localStorage.setItem("pbos", JSON.stringify(data));
+
+  loadEntries();
+  }
 
 function saveTable(){
 
@@ -147,6 +162,9 @@ function saveTable(){
   localStorage.setItem("pbos", JSON.stringify(newData));
   loadEntries();
 }
+  function autoSaveTable(){
+  saveTable();
+  }
 
 // ================= ANOVA =================
 function runANOVA(){
