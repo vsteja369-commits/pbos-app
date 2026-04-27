@@ -91,6 +91,16 @@ th, td { border:1px solid #ccc; padding:5px; text-align:center;}
 <div id="gcaResult"></div>
 </div>
 
+<div class="card">
+<h3>Multi-Trait Selection Index</h3>
+
+<input id="traitsListInput" placeholder="Traits (comma separated: yield,height)">
+<input id="weightsInput" placeholder="Weights (same order: 0.6,0.4)">
+
+<button onclick="runSelectionIndex()">Calculate Index</button>
+
+<div id="siResult"></div>
+</div>
 </div>
 
 <script>
@@ -489,6 +499,89 @@ A_ranking.forEach(a=>{
 });
 
 gcaResult.innerHTML = out;
+}
+function runSelectionIndex(){
+
+  let traits = document.getElementById("traitsListInput").value
+                .toLowerCase().split(",");
+
+  let weights = document.getElementById("weightsInput").value
+                .split(",").map(Number);
+
+  let data = JSON.parse(localStorage.getItem("pbos")||"[]");
+
+  let lineData = {};
+
+  // Collect trait values
+  data.forEach(e=>{
+    if(!lineData[e.id]) lineData[e.id] = {};
+
+    e.traits.forEach(t=>{
+      let name = t.name.toLowerCase();
+      let val = parseFloat(t.value);
+
+      if(traits.includes(name) && !isNaN(val)){
+        if(!lineData[e.id][name]) lineData[e.id][name]=[];
+        lineData[e.id][name].push(val);
+      }
+    });
+  });
+
+  // Calculate means
+  let means = {};
+
+  for(let line in lineData){
+    means[line]={};
+
+    traits.forEach(tr=>{
+      let arr = lineData[line][tr] || [];
+      let mean = arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : 0;
+      means[line][tr]=mean;
+    });
+  }
+
+  // Normalize (important!)
+  let norm = {};
+
+  traits.forEach(tr=>{
+    let values = Object.values(means).map(m=>m[tr]);
+    let max = Math.max(...values);
+    let min = Math.min(...values);
+
+    for(let line in means){
+      if(!norm[line]) norm[line]={};
+      let val = means[line][tr];
+
+      norm[line][tr] = (max-min) ? (val-min)/(max-min) : 0;
+    }
+  });
+
+  // Selection index
+  let SI = [];
+
+  for(let line in norm){
+    let score = 0;
+
+    traits.forEach((tr,i)=>{
+      score += weights[i] * norm[line][tr];
+    });
+
+    SI.push({line,score});
+  }
+
+  // Ranking
+  SI.sort((a,b)=>b.score-a.score);
+
+  // OUTPUT
+  let out = "<b>Selection Index Ranking:</b><br>";
+
+  SI.forEach((s,i)=>{
+    out += `${i+1}. ${s.line} → ${s.score.toFixed(3)}<br>`;
+  });
+
+  out += `<br>🏆 Best Line: ${SI[0].line}`;
+
+  document.getElementById("siResult").innerHTML = out;
 }
 </script>
 
