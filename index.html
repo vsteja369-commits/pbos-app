@@ -59,7 +59,14 @@ A1,A Line,Rep 1,100,25"></textarea>
 <button onclick="runSelectionIndex()">Run</button>
 <div id="siResult"></div>
 </div>
+  
+<div class="card">
+<h3>Parent Classification & Cross Suggestions</h3>
 
+<button onclick="runClassification()">Run Classification</button>
+
+<div id="classResult"></div>
+</div>
 </div>
 
 <script>
@@ -331,6 +338,148 @@ function loadEntries(){
 }
 
 loadEntries();
+
+  function runClassification(){
+
+  let data = JSON.parse(localStorage.getItem("pbos")||"[]");
+
+  let A_lines = {};
+  let R_lines = [];
+
+  // ===== GROUP DATA =====
+  data.forEach(e=>{
+    if(!A_lines[e.id]){
+      A_lines[e.id] = {type:e.type, traits:{}};
+    }
+
+    e.traits.forEach(t=>{
+      let val = parseFloat(t.value);
+      if(!isNaN(val)){
+        if(!A_lines[e.id].traits[t.name]){
+          A_lines[e.id].traits[t.name] = [];
+        }
+        A_lines[e.id].traits[t.name].push(val);
+      }
+    });
+  });
+
+  // ===== MEAN CALCULATION =====
+  let means = {};
+
+  for(let line in A_lines){
+    means[line] = {type:A_lines[line].type};
+
+    for(let t in A_lines[line].traits){
+      let arr = A_lines[line].traits[t];
+      let mean = arr.reduce((a,b)=>a+b,0)/arr.length;
+      means[line][t.toLowerCase()] = mean;
+    }
+  }
+
+  // ===== CLASSIFICATION =====
+  let result = [];
+
+  for(let line in means){
+
+    let m = means[line];
+    let score = 0;
+    let reject = false;
+    let notes = [];
+
+    // ===== A LINE RULES =====
+    if(m.type === "A Line"){
+
+      if(m["stigma exertion"] < 20){
+        reject = true;
+        notes.push("Low stigma");
+      } else score += 2;
+
+      if(m["spikelet opening"] < 5){
+        reject = true;
+        notes.push("Poor spikelet opening");
+      } else score += 2;
+    }
+
+    // ===== R LINE RULES =====
+    if(m.type === "R Line"){
+
+      if(m["pollen shedding"] < 5){
+        reject = true;
+        notes.push("Low pollen");
+      } else score += 2;
+
+      if(m["anther size"] < 3){
+        notes.push("Small anther");
+      } else score += 1;
+    }
+
+    // ===== COMMON RULES =====
+    if(m["plant height"] > 140){
+      notes.push("Tall");
+    } else score += 1;
+
+    if(m["tiller per plant"] < 8){
+      reject = true;
+      notes.push("Low tillering");
+    } else score += 1;
+
+    if(m["productive tillers"] < 6){
+      reject = true;
+      notes.push("Low productive tillers");
+    } else score += 1;
+
+    result.push({
+      line: line,
+      type: m.type,
+      score: score,
+      reject: reject,
+      notes: notes.join(", ")
+    });
+  }
+
+  // ===== FILTER GOOD LINES =====
+  let A_good = result.filter(x=>x.type==="A Line" && !x.reject);
+  let R_good = result.filter(x=>x.type==="R Line" && !x.reject);
+
+  // ===== CROSS MATCHING =====
+  let crosses = [];
+
+  A_good.forEach(a=>{
+    R_good.forEach(r=>{
+
+      let matchScore = (a.score + r.score)/2;
+
+      let tag = "Moderate";
+
+      if(matchScore > 5) tag = "High Match ✔";
+      if(matchScore < 3) tag = "Poor ❌";
+
+      crosses.push({
+        cross: `${a.line} x ${r.line}`,
+        score: matchScore,
+        tag: tag
+      });
+    });
+  });
+
+  crosses.sort((a,b)=>b.score-a.score);
+
+  // ===== OUTPUT =====
+  let out = "<b>Line Classification:</b><br>";
+
+  result.forEach(r=>{
+    let status = r.reject ? "❌ Rejected" : "✔ Selected";
+    out += `${r.line} (${r.type}) → Score: ${r.score} → ${status} (${r.notes})<br>`;
+  });
+
+  out += "<br><b>Top Cross Suggestions:</b><br>";
+
+  crosses.slice(0,10).forEach(c=>{
+    out += `${c.cross} → ${c.tag}<br>`;
+  });
+
+  document.getElementById("classResult").innerHTML = out;
+  }
 
 </script>
 
