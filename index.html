@@ -2,244 +2,240 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>🌾 Advanced Breeding Intelligence</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌾 Breeding Decision Engine</title>
 
 <style>
-body {font-family: Arial; background:#e8f5e9;}
-.card {background:white; margin:10px; padding:10px; border-radius:10px;}
-h2 {text-align:center; color:#2e7d32;}
-button {background:#43a047;color:white;border:none;padding:6px;border-radius:5px;}
-table {width:100%; border-collapse:collapse;}
-td,th {border:1px solid #ccc; padding:5px;}
+body {
+  font-family: 'Segoe UI';
+  background: linear-gradient(120deg,#e8f5e9,#f1f8e9);
+  margin:0;
+}
+
+header {
+  background:#2e7d32;
+  color:white;
+  padding:15px;
+  text-align:center;
+  font-size:22px;
+  font-weight:bold;
+}
+
+.container {padding:10px;}
+
+.card {
+  background:white;
+  margin:10px 0;
+  padding:12px;
+  border-radius:12px;
+  box-shadow:0 4px 10px rgba(0,0,0,0.1);
+}
+
+h3 {color:#2e7d32;}
+
+input,select,textarea {
+  width:100%;
+  padding:8px;
+  margin:5px 0;
+  border-radius:6px;
+  border:1px solid #ccc;
+}
+
+button {
+  background:#43a047;
+  color:white;
+  border:none;
+  padding:10px;
+  border-radius:8px;
+  margin-top:5px;
+  font-weight:bold;
+}
+
+button:hover {background:#2e7d32;}
+
+table {
+  width:100%;
+  border-collapse:collapse;
+}
+
+th {
+  background:#81c784;
+  color:white;
+}
+
+td,th {
+  border:1px solid #ccc;
+  padding:6px;
+  text-align:center;
+}
+
+.good {color:green; font-weight:bold;}
+.bad {color:red; font-weight:bold;}
 </style>
 </head>
 
 <body>
 
-<h2>🌾 Advanced Breeding System</h2>
+<header>🌾 Breeding Intelligence Engine</header>
+
+<div class="container">
 
 <div class="card">
-<textarea id="excelInput" rows="5"></textarea><br>
-<button onclick="importExcel()">Import</button>
-<button onclick="clearData()">Clear</button>
+<h3>➕ Add Parent Data</h3>
+
+<input id="line" placeholder="Line Name">
+<select id="type">
+<option>A Line</option>
+<option>B Line</option>
+<option>R Line</option>
+</select>
+
+<input id="flower" placeholder="Days to Flowering">
+<input id="height" placeholder="Plant Height">
+<input id="tiller" placeholder="Tillers">
+<input id="stigma" placeholder="Stigma Exertion">
+<input id="pollen" placeholder="Pollen Shedding">
+
+<button onclick="addEntry()">Add</button>
 </div>
 
 <div class="card">
-<div id="tableView"></div>
-<button onclick="addRow()">Add Row</button>
+<h3>📊 Data</h3>
+<div id="table"></div>
 </div>
 
 <div class="card">
-<h3>ANOVA</h3>
-<input id="anovaTrait">
-<button onclick="runANOVA()">Run</button>
-<div id="anovaResult"></div>
+<h3>🌱 Classification</h3>
+<button onclick="classify()">Run</button>
+<div id="classOut"></div>
 </div>
 
 <div class="card">
-<h3>Experimental Designs</h3>
-<input id="treatments" placeholder="Treatments">
-<input id="replications" placeholder="Replications">
-<button onclick="genRBD()">RBD</button>
-<button onclick="genCRD()">CRD</button>
-<div id="designOut"></div>
+<h3>🤖 Cross Suggestions</h3>
+<button onclick="suggest()">Generate</button>
+<div id="crossOut"></div>
 </div>
 
-<div class="card">
-<h3>GCA / SCA</h3>
-<input id="gcaTrait">
-<button onclick="runGCA()">Run</button>
-<div id="gcaOut"></div>
-</div>
-
-<div class="card">
-<h3>Outcome AI</h3>
-<input id="crossName" placeholder="A1 x R1">
-<input id="yieldVal" placeholder="Yield">
-<input id="flowerVal" placeholder="Flowering days">
-<input id="tillerVal" placeholder="Tillers">
-<input id="lodgingVal" placeholder="Lodging">
-<button onclick="saveOutcome()">Save</button>
-<button onclick="runAI()">Run AI</button>
-<div id="aiOut"></div>
 </div>
 
 <script>
 
-// ===== DATA =====
-function getData(){return JSON.parse(localStorage.getItem("pbos")||"[]");}
-function setData(d){localStorage.setItem("pbos",JSON.stringify(d));}
-
-// ===== IMPORT =====
-function importExcel(){
- let lines=excelInput.value.split("\n");
- let headers=lines[0].split(",");
- let d=getData();
-
- for(let i=1;i<lines.length;i++){
-  let p=lines[i].split(",");
-  let traits=[];
-  for(let j=3;j<headers.length;j++){
-   traits.push({name:headers[j].toLowerCase(),value:+p[j]});
-  }
-  d.push({id:p[0],type:p[1],rep:p[2],traits});
- }
- setData(d); loadTable();
+function getData(){
+ return JSON.parse(localStorage.getItem("lines")||"[]");
 }
 
-// ===== TABLE =====
+function setData(d){
+ localStorage.setItem("lines",JSON.stringify(d));
+}
+
+function addEntry(){
+
+ let d=getData();
+
+ d.push({
+  id:line.value,
+  type:type.value,
+  flower:+flower.value,
+  height:+height.value,
+  tiller:+tiller.value,
+  stigma:+stigma.value,
+  pollen:+pollen.value
+ });
+
+ setData(d);
+ loadTable();
+}
+
 function loadTable(){
+
  let d=getData();
- let html="<table><tr><th>Line</th><th>Trait</th><th>Value</th></tr>";
- d.forEach((e,i)=>{
-  e.traits.forEach(t=>{
-   html+=`<tr>
-   <td contenteditable>${e.id}</td>
-   <td contenteditable>${t.name}</td>
-   <td contenteditable>${t.value}</td>
-   </tr>`;
-  });
+
+ let html="<table><tr><th>Line</th><th>Type</th><th>Flower</th><th>Height</th><th>Tiller</th></tr>";
+
+ d.forEach(x=>{
+  html+=`<tr>
+  <td>${x.id}</td>
+  <td>${x.type}</td>
+  <td>${x.flower}</td>
+  <td>${x.height}</td>
+  <td>${x.tiller}</td>
+  </tr>`;
  });
+
  html+="</table>";
- tableView.innerHTML=html;
+
+ table.innerHTML=html;
 }
 
-function addRow(){
+function classify(){
+
  let d=getData();
- d.push({id:"",type:"",rep:"",traits:[{name:"",value:""}]});
- setData(d); loadTable();
+
+ let out="";
+
+ d.forEach(x=>{
+
+  let score=0;
+  let reject=false;
+
+  if(x.type=="A Line"){
+   if(x.stigma<20) reject=true;
+   else score+=2;
+  }
+
+  if(x.type=="R Line"){
+   if(x.pollen<5) reject=true;
+   else score+=2;
+  }
+
+  if(x.tiller<8) reject=true;
+  else score+=1;
+
+  if(x.height<120) score+=1;
+
+  out+=`${x.id} → ${reject ? "<span class='bad'>Rejected</span>" : "<span class='good'>Selected</span>"}<br>`;
+ });
+
+ classOut.innerHTML=out;
 }
 
-function clearData(){localStorage.clear();loadTable();}
+function suggest(){
 
-// ===== ANOVA =====
-function runANOVA(){
- let trait=anovaTrait.value.toLowerCase();
  let d=getData();
- let arr=[];
 
- d.forEach(e=>{
-  e.traits.forEach(t=>{
-   if(t.name==trait){
-    arr.push({line:e.id,value:t.value});
-   }
+ let A=d.filter(x=>x.type=="A Line");
+ let R=d.filter(x=>x.type=="R Line");
+
+ let out="";
+
+ A.forEach(a=>{
+  R.forEach(r=>{
+
+   let score=0;
+
+   let diff=Math.abs(a.flower-r.flower);
+
+   if(diff<=3) score+=3;
+   else if(diff<=7) score+=1;
+   else score-=2;
+
+   if(a.tiller>10) score+=1;
+   if(r.tiller>10) score+=1;
+
+   if(a.height<120 && r.height<120) score+=1;
+
+   let tag="Moderate";
+
+   if(score>=5) tag="High ✔";
+   if(score<=1) tag="Poor ❌";
+
+   out+=`${a.id} × ${r.id} → ${tag}<br>`;
   });
  });
 
- let gm=arr.reduce((a,b)=>a+b.value,0)/arr.length;
-
- let groups={};
- arr.forEach(x=>{
-  if(!groups[x.line]) groups[x.line]=[];
-  groups[x.line].push(x.value);
- });
-
- let out="Means:<br>";
- for(let k in groups){
-  let m=groups[k].reduce((a,b)=>a+b,0)/groups[k].length;
-  out+=`${k}: ${m.toFixed(2)}<br>`;
- }
-
- anovaResult.innerHTML=out;
+ crossOut.innerHTML=out;
 }
 
-// ===== DESIGNS =====
-function genRBD(){
- let t=+treatments.value,r=+replications.value;
- let out="";
- for(let i=1;i<=r;i++){
-  let arr=[...Array(t).keys()].map(x=>"T"+(x+1));
-  arr.sort(()=>Math.random()-0.5);
-  out+="Rep "+i+": "+arr.join(", ")+"<br>";
- }
- designOut.innerHTML=out;
-}
-
-function genCRD(){
- let t=+treatments.value;
- let arr=[...Array(t).keys()].map(x=>"T"+(x+1));
- arr.sort(()=>Math.random()-0.5);
- designOut.innerHTML="CRD: "+arr.join(", ");
-}
-
-// ===== GCA SCA =====
-function runGCA(){
- let trait=gcaTrait.value.toLowerCase();
- let d=getData();
- let crosses=[];
-
- d.forEach(e=>{
-  if(e.type=="Hybrid"){
-   e.traits.forEach(t=>{
-    if(t.name==trait){
-     let [A,R]=e.id.split("x").map(x=>x.trim());
-     crosses.push({A,R,value:t.value});
-    }
-   });
-  }
- });
-
- let gm=crosses.reduce((a,b)=>a+b.value,0)/crosses.length;
-
- let Amap={},Rmap={};
-
- crosses.forEach(c=>{
-  if(!Amap[c.A])Amap[c.A]=[];
-  if(!Rmap[c.R])Rmap[c.R]=[];
-  Amap[c.A].push(c.value);
-  Rmap[c.R].push(c.value);
- });
-
- let out="GCA A:<br>";
- for(let a in Amap){
-  let m=Amap[a].reduce((x,y)=>x+y,0)/Amap[a].length;
-  out+=`${a}: ${(m-gm).toFixed(2)}<br>`;
- }
-
- out+="<br>GCA R:<br>";
- for(let r in Rmap){
-  let m=Rmap[r].reduce((x,y)=>x+y,0)/Rmap[r].length;
-  out+=`${r}: ${(m-gm).toFixed(2)}<br>`;
- }
-
- out+="<br>SCA:<br>";
- crosses.forEach(c=>{
-  let sca=c.value-gm;
-  out+=`${c.A} x ${c.R}: ${sca.toFixed(2)}<br>`;
- });
-
- gcaOut.innerHTML=out;
-}
-
-// ===== OUTCOME =====
-function saveOutcome(){
- let o=JSON.parse(localStorage.getItem("out")||"[]");
- o.push({
-  cross:crossName.value,
-  yield:+yieldVal.value,
-  flowering:+flowerVal.value,
-  tiller:+tillerVal.value,
-  lodging:lodgingVal.value
- });
- localStorage.setItem("out",JSON.stringify(o));
-}
-
-// ===== AI =====
-function runAI(){
- let o=JSON.parse(localStorage.getItem("out")||"[]");
- let out="";
-
- o.forEach(x=>{
-  if(x.lodging=="severe") out+=`${x.cross}: reduce height<br>`;
-  if(x.flowering>130) out+=`${x.cross}: too late<br>`;
-  if(x.tiller<8) out+=`${x.cross}: improve tillering<br>`;
-  if(x.yield>3) out+=`${x.cross}: good cross refine<br>`;
- });
-
- aiOut.innerHTML=out;
-}
-
-// INIT
 loadTable();
 
 </script>
