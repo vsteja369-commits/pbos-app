@@ -3,717 +3,294 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PBOS - Breeding System</title>
+<title>Breeding Intelligence System</title>
 
 <style>
-body { font-family: Arial; background:#f5f5f5; margin:0;}
-header { background:#2e7d32; color:white; padding:12px; text-align:center;}
-.container { padding:10px;}
-.card { background:white; padding:12px; margin-bottom:10px; border-radius:10px;}
-input, textarea, button {
-  width:100%; padding:10px; margin:5px 0;
-  border-radius:6px; border:1px solid #ccc;
-}
-button { background:#2e7d32; color:white; font-weight:bold;}
-table { width:100%; border-collapse:collapse; }
-th, td { border:1px solid #ccc; padding:6px; text-align:center;}
+body {font-family: Arial; background:#f4f4f4;}
+.card {background:white; padding:10px; margin:10px; border-radius:8px;}
+button {padding:8px; margin:5px;}
+table {width:100%; border-collapse:collapse;}
+td,th {border:1px solid #ccc; padding:6px;}
+img {width:60px;}
 </style>
 </head>
 
 <body>
 
-<header><h2>🌾 PBOS - Breeding System</h2></header>
-
-<div class="container">
+<h2 style="text-align:center;">🌾 Breeding Intelligence System</h2>
 
 <div class="card">
-<h3>Excel Data Entry</h3>
-<textarea id="excelInput" rows="6" placeholder="Line,Type,Rep,Height,Yield
-A1,A Line,Rep 1,100,25"></textarea>
-<button onclick="importExcelData()">Import</button>
+<h3>Excel Entry</h3>
+<textarea id="excelInput" rows="6" placeholder="Line,Type,Rep,Plant Height,Yield"></textarea>
+<br>
+<button onclick="importExcel()">Import</button>
+<button onclick="clearData()">Clear All Data</button>
+<button onclick="exportExcel()">Export Excel</button>
+<button onclick="exportWord()">Export Word</button>
 </div>
 
 <div class="card">
 <h3>Editable Table</h3>
 <div id="tableView"></div>
+<button onclick="addRow()">Add Row</button>
 </div>
 
 <div class="card">
-<h3>ANOVA</h3>
-<input id="anovaTrait" placeholder="Trait">
-<button onclick="runANOVA()">Run</button>
-<div id="anovaResult"></div>
-</div>
-
-<div class="card">
-<h3>GCA / SCA</h3>
-<input id="gcaTrait" placeholder="Trait">
-<button onclick="runGCA()">Run</button>
-<div id="gcaResult"></div>
-</div>
-
-<div class="card">
-<h3>Selection Index</h3>
-<input id="traitsListInput" placeholder="yield,height">
-<input id="weightsInput" placeholder="0.7,0.3">
-<button onclick="runSelectionIndex()">Run</button>
-<div id="siResult"></div>
-</div>
-  
-<div class="card">
-<h3>Parent Classification & Cross Suggestions</h3>
-
-<button onclick="runClassification()">Run Classification</button>
-
+<h3>Parent Classification</h3>
+<button onclick="runClassification()">Run</button>
 <div id="classResult"></div>
 </div>
 
 <div class="card">
-<h3>Breeding AI Assistant</h3>
-
-<input id="aiQuery" placeholder="Ask something like: best A line">
-
-<button onclick="runAI()">Ask</button>
-
-<div id="aiResult"></div>
+<h3>Cross Outcome</h3>
+<input id="crossName" placeholder="A1 x R1">
+<input id="yieldVal" placeholder="Yield">
+<input id="lodgingVal" placeholder="Lodging">
+<input id="diseaseVal" placeholder="Disease">
+<button onclick="saveOutcome()">Save</button>
+<div id="outcomeMsg"></div>
 </div>
 
-  <div class="card">
-<h3>Cross Outcome (Field Feedback)</h3>
-
-<input id="crossName" placeholder="A12 x R45">
-<input id="yieldVal" placeholder="Yield (q/acre)">
-<input id="lodgingVal" placeholder="Lodging (none/moderate/severe)">
-<input id="diseaseVal" placeholder="Disease (low/medium/high)">
-<input id="notesVal" placeholder="Notes">
-
-<button onclick="saveOutcome()">Save Outcome</button>
-
-<div id="outcomeMsg"></div>
-  </div>
-
-  <div class="card">
-<h3>AI: Next Cross Strategy</h3>
-<button onclick="recommendNext()">Recommend</button>
+<div class="card">
+<h3>AI Suggestions</h3>
+<button onclick="recommendNext()">Run AI</button>
 <div id="aiNext"></div>
-  </div>
-  
 </div>
 
 <script>
 
-// ================= IMPORT =================
-function importExcelData(){
+// ===== IMPORT =====
+function importExcel(){
+ let text = excelInput.value.trim();
+ if(!text) return;
 
-  let text = excelInput.value.trim();
-  if(!text) return;
+ let lines = text.split("\n");
+ let headers = lines[0].split(",").map(h=>h.trim().toLowerCase());
 
-  let lines = text.split("\n");
-  let headers = lines[0].split(",").map(h=>h.trim().toLowerCase());
+ let data = JSON.parse(localStorage.getItem("pbos")||"[]");
 
-  let data = JSON.parse(localStorage.getItem("pbos")||"[]");
+ for(let i=1;i<lines.length;i++){
+  let parts = lines[i].split(",").map(x=>x.trim());
 
-  for(let i=1;i<lines.length;i++){
-    let parts = lines[i].split(",").map(x=>x.trim());
-
-    let traits = [];
-    for(let j=3;j<headers.length;j++){
-      if(parts[j]){
-        traits.push({name:headers[j],value:parts[j],unit:""});
-      }
+  let traits=[];
+  for(let j=3;j<headers.length;j++){
+    if(parts[j]){
+      traits.push({name:headers[j], value:parts[j]});
     }
-
-    data.push({
-      id: parts[0],
-      type: parts[1],
-      rep: parts[2],
-      traits: traits
-    });
   }
-
-  localStorage.setItem("pbos", JSON.stringify(data));
-  loadEntries();
-}
-
-// ================= TABLE =================
-function renderTable(){
-
-  let data = JSON.parse(localStorage.getItem("pbos")||"[]");
-
-  let html="<table><tr><th>Line</th><th>Type</th><th>Rep</th><th>Trait</th><th>Value</th><th>Unit</th></tr>";
-
-  data.forEach(e=>{
-    e.traits.forEach(t=>{
-      html += `<tr>
-  <td contenteditable onblur="autoSaveTable()">${e.id}</td>
-  <td contenteditable onblur="autoSaveTable()">${e.type}</td>
-  <td contenteditable onblur="autoSaveTable()">${e.rep}</td>
-  <td contenteditable onblur="autoSaveTable()">${t.name}</td>
-  <td contenteditable onblur="autoSaveTable()">${t.value}</td>
-  <td contenteditable onblur="autoSaveTable()">${t.unit || ""}</td>
-</tr>`;
-    });
-  });
-
-html+="</table><br><button onclick='addRow()'>Add Row</button>";
-
-  tableView.innerHTML=html;
-}
-  function addRow(){
-
-  let data = JSON.parse(localStorage.getItem("pbos")||"[]");
 
   data.push({
-    id:"",
-    type:"",
-    rep:"",
-    traits:[{name:"",value:"",unit:""}]
+    id:parts[0],
+    type:parts[1],
+    rep:parts[2],
+    photo:"",
+    traits:traits
   });
+ }
 
-  localStorage.setItem("pbos", JSON.stringify(data));
+ localStorage.setItem("pbos", JSON.stringify(data));
+ loadTable();
+}
 
-  loadEntries();
-  }
+// ===== CLEAR =====
+function clearData(){
+ if(confirm("Delete all data?")){
+  localStorage.removeItem("pbos");
+  loadTable();
+ }
+}
 
+// ===== TABLE =====
+function loadTable(){
+
+ let data = JSON.parse(localStorage.getItem("pbos")||"[]");
+
+ let html="<table><tr><th>Line</th><th>Type</th><th>Rep</th><th>Trait</th><th>Value</th><th>Photo</th><th>Delete</th></tr>";
+
+ data.forEach((e,i)=>{
+  e.traits.forEach((t,j)=>{
+    html+=`<tr>
+      <td contenteditable onblur="saveTable()">${e.id}</td>
+      <td contenteditable onblur="saveTable()">${e.type}</td>
+      <td contenteditable onblur="saveTable()">${e.rep}</td>
+      <td contenteditable onblur="saveTable()">${t.name}</td>
+      <td contenteditable onblur="saveTable()">${t.value}</td>
+      <td>
+        <input type="file" onchange="uploadPhoto(event,${i})">
+        ${e.photo ? `<img src="${e.photo}">` : ""}
+      </td>
+      <td><button onclick="deleteRow(${i})">X</button></td>
+    </tr>`;
+  });
+ });
+
+ html+="</table>";
+ tableView.innerHTML=html;
+}
+
+// ===== SAVE =====
 function saveTable(){
+ let rows = document.querySelectorAll("#tableView table tr");
+ let newData=[];
 
-  let rows=document.querySelectorAll("#tableView table tr");
-  let newData=[];
+ rows.forEach((r,i)=>{
+  if(i===0) return;
 
-  rows.forEach((r,i)=>{
-    if(i===0) return;
+  let c=r.querySelectorAll("td");
 
-    let c=r.querySelectorAll("td");
-
-    newData.push({
-      id:c[0].innerText,
-      type:c[1].innerText,
-      rep:c[2].innerText,
-      traits:[{
-        name:c[3].innerText,
-        value:c[4].innerText,
-        unit:c[5].innerText
-      }]
-    });
+  newData.push({
+    id:c[0].innerText,
+    type:c[1].innerText,
+    rep:c[2].innerText,
+    photo:"",
+    traits:[{name:c[3].innerText, value:c[4].innerText}]
   });
+ });
 
-  localStorage.setItem("pbos", JSON.stringify(newData));
-  loadEntries();
-}
-  function autoSaveTable(){
-  saveTable();
-  }
-
-// ================= ANOVA =================
-function runANOVA(){
-
-  let trait=anovaTrait.value.toLowerCase();
-  let data=JSON.parse(localStorage.getItem("pbos")||"[]");
-
-  let arr=[];
-  data.forEach(e=>{
-    e.traits.forEach(t=>{
-      if(t.name.toLowerCase()==trait){
-        arr.push({line:e.id,rep:e.rep,value:+t.value});
-      }
-    });
-  });
-
-  if(!arr.length) return;
-
-  let gm=arr.reduce((a,b)=>a+b.value,0)/arr.length;
-
-  let tm={}, reps={};
-
-  arr.forEach(d=>{
-    if(!tm[d.line]) tm[d.line]=[];
-    if(!reps[d.rep]) reps[d.rep]=[];
-    tm[d.line].push(d.value);
-    reps[d.rep].push(d.value);
-  });
-
-  let means={};
-  for(let k in tm){
-    means[k]=tm[k].reduce((a,b)=>a+b,0)/tm[k].length;
-  }
-
-  let SST=arr.reduce((s,d)=>s+(d.value-gm)**2,0);
-
-  let SSTr=0;
-  for(let k in means){
-    SSTr+=tm[k].length*(means[k]-gm)**2;
-  }
-
-  let SSE=SST-SSTr;
-
-  let MSE=SSE/(arr.length-Object.keys(tm).length);
-  let MSTr=SSTr/(Object.keys(tm).length-1);
-  let F=MSTr/MSE;
-
-  let LSD=2*Math.sqrt((2*MSE)/3);
-
-  let out="Means:<br>";
-  for(let k in means) out+=`${k}: ${means[k].toFixed(2)}<br>`;
-
-  out+=`<br>F: ${F.toFixed(2)}<br>LSD: ${LSD.toFixed(2)}<br><br>`;
-
-  let keys=Object.keys(means);
-  for(let i=0;i<keys.length;i++){
-    for(let j=i+1;j<keys.length;j++){
-      let d=Math.abs(means[keys[i]]-means[keys[j]]);
-      out+=`${keys[i]} vs ${keys[j]} → ${d.toFixed(2)} ${(d>LSD)?"✔":"✖"}<br>`;
-    }
-  }
-
-  anovaResult.innerHTML=out;
+ localStorage.setItem("pbos", JSON.stringify(newData));
 }
 
-// ================= GCA =================
-function runGCA(){
-
-  let trait=gcaTrait.value.toLowerCase();
-  let data=JSON.parse(localStorage.getItem("pbos")||"[]");
-
-  let crosses=[];
-
-  data.forEach(e=>{
-    if(e.type=="Hybrid"){
-      e.traits.forEach(t=>{
-        if(t.name.toLowerCase()==trait){
-          let [A,R]=e.id.split("x").map(x=>x.trim());
-          crosses.push({A,R,value:+t.value});
-        }
-      });
-    }
-  });
-
-  if(!crosses.length) return;
-
-  let gm=crosses.reduce((a,b)=>a+b.value,0)/crosses.length;
-
-  let A={},R={};
-
-  crosses.forEach(c=>{
-    if(!A[c.A]) A[c.A]=[];
-    if(!R[c.R]) R[c.R]=[];
-    A[c.A].push(c.value);
-    R[c.R].push(c.value);
-  });
-
-  let GCA_A={},GCA_R={};
-
-  for(let k in A){
-    GCA_A[k]=(A[k].reduce((a,b)=>a+b,0)/A[k].length)-gm;
-  }
-
-  for(let k in R){
-    GCA_R[k]=(R[k].reduce((a,b)=>a+b,0)/R[k].length)-gm;
-  }
-
-  let out=`Grand Mean: ${gm.toFixed(2)}<br><br>`;
-
-  for(let k in GCA_A) out+=`A ${k}: ${GCA_A[k].toFixed(2)}<br>`;
-  out+="<br>";
-  for(let k in GCA_R) out+=`R ${k}: ${GCA_R[k].toFixed(2)}<br>`;
-
-  gcaResult.innerHTML=out;
+// ===== ADD ROW =====
+function addRow(){
+ let data = JSON.parse(localStorage.getItem("pbos")||"[]");
+ data.push({id:"",type:"",rep:"",photo:"",traits:[{name:"",value:""}]});
+ localStorage.setItem("pbos", JSON.stringify(data));
+ loadTable();
 }
 
-// ================= SELECTION INDEX =================
-function runSelectionIndex(){
-
-  let traits=traitsListInput.value.toLowerCase().split(",");
-  let weights=weightsInput.value.split(",").map(Number);
-
-  let data=JSON.parse(localStorage.getItem("pbos")||"[]");
-
-  let map={};
-
-  data.forEach(e=>{
-    if(!map[e.id]) map[e.id]={};
-
-    e.traits.forEach(t=>{
-      let val=+t.value;
-      if(traits.includes(t.name.toLowerCase())){
-        if(!map[e.id][t.name]) map[e.id][t.name]=[];
-        map[e.id][t.name].push(val);
-      }
-    });
-  });
-
-  let score=[];
-
-  for(let line in map){
-    let s=0;
-
-    traits.forEach((tr,i)=>{
-      let arr=map[line][tr]||[];
-      let m=arr.length?arr.reduce((a,b)=>a+b,0)/arr.length:0;
-      s+=weights[i]*m;
-    });
-
-    score.push({line,s});
-  }
-
-  score.sort((a,b)=>b.s-a.s);
-
-  let out="";
-  score.forEach((x,i)=> out+=`${i+1}. ${x.line} → ${x.s.toFixed(2)}<br>`);
-
-  siResult.innerHTML=out;
+// ===== DELETE =====
+function deleteRow(index){
+ let data = JSON.parse(localStorage.getItem("pbos")||"[]");
+ data.splice(index,1);
+ localStorage.setItem("pbos", JSON.stringify(data));
+ loadTable();
 }
 
-// ================= INIT =================
-function loadEntries(){
-  renderTable();
-}
-
-loadEntries();
-
-  function runClassification(){
-
+// ===== PHOTO =====
+function uploadPhoto(e,i){
+ let reader=new FileReader();
+ reader.onload=function(){
   let data = JSON.parse(localStorage.getItem("pbos")||"[]");
+  data[i].photo=reader.result;
+  localStorage.setItem("pbos", JSON.stringify(data));
+  loadTable();
+ };
+ reader.readAsDataURL(e.target.files[0]);
+}
 
-  let A_lines = {};
-  let R_lines = [];
+// ===== EXPORT =====
+function exportExcel(){
+ let data = JSON.parse(localStorage.getItem("pbos")||"[]");
 
-  // ===== GROUP DATA =====
-  data.forEach(e=>{
-    if(!A_lines[e.id]){
-      A_lines[e.id] = {type:e.type, traits:{}};
-    }
+ let csv="Line,Type,Rep,Trait,Value\n";
 
-    e.traits.forEach(t=>{
-      let val = parseFloat(t.value);
-      if(!isNaN(val)){
-        if(!A_lines[e.id].traits[t.name]){
-          A_lines[e.id].traits[t.name] = [];
-        }
-        A_lines[e.id].traits[t.name].push(val);
-      }
-    });
+ data.forEach(e=>{
+  e.traits.forEach(t=>{
+    csv+=`${e.id},${e.type},${e.rep},${t.name},${t.value}\n`;
+  });
+ });
+
+ let blob = new Blob([csv]);
+ let a=document.createElement("a");
+ a.href=URL.createObjectURL(blob);
+ a.download="data.csv";
+ a.click();
+}
+
+function exportWord(){
+ let data = JSON.parse(localStorage.getItem("pbos")||"[]");
+
+ let text="Breeding Data\n\n";
+
+ data.forEach(e=>{
+  text+=`Line: ${e.id}\nType: ${e.type}\n`;
+  e.traits.forEach(t=>{
+    text+=`${t.name}: ${t.value}\n`;
+  });
+  text+="\n";
+ });
+
+ let blob=new Blob([text],{type:"application/msword"});
+ let a=document.createElement("a");
+ a.href=URL.createObjectURL(blob);
+ a.download="data.doc";
+ a.click();
+}
+
+// ===== CLASSIFICATION =====
+function runClassification(){
+
+ let data = JSON.parse(localStorage.getItem("pbos")||"[]");
+
+ let out="";
+
+ data.forEach(e=>{
+  let score=0;
+
+  e.traits.forEach(t=>{
+    if(t.name.toLowerCase()=="stigma exertion" && t.value>20) score+=2;
+    if(t.name.toLowerCase()=="pollen shedding" && t.value>5) score+=2;
   });
 
-  // ===== MEAN CALCULATION =====
-  let means = {};
+  let status = score>=2 ? "Selected" : "Rejected";
 
-  for(let line in A_lines){
-    means[line] = {type:A_lines[line].type};
+  out+=`${e.id} → ${status} (Score ${score})<br>`;
+ });
 
-    for(let t in A_lines[line].traits){
-      let arr = A_lines[line].traits[t];
-      let mean = arr.reduce((a,b)=>a+b,0)/arr.length;
-      means[line][t.toLowerCase()] = mean;
-    }
+ classResult.innerHTML=out;
+}
+
+// ===== OUTCOME =====
+function saveOutcome(){
+
+ let outcomes = JSON.parse(localStorage.getItem("outcomes")||"[]");
+
+ outcomes.push({
+  cross:crossName.value,
+  yield:+yieldVal.value,
+  lodging:lodgingVal.value.toLowerCase(),
+  disease:diseaseVal.value.toLowerCase()
+ });
+
+ localStorage.setItem("outcomes", JSON.stringify(outcomes));
+
+ outcomeMsg.innerHTML="Saved";
+}
+
+// ===== AI =====
+function recommendNext(){
+
+ let outcomes = JSON.parse(localStorage.getItem("outcomes")||"[]");
+ let data = JSON.parse(localStorage.getItem("pbos")||"[]");
+
+ if(!outcomes.length){
+  aiNext.innerHTML="No data";
+  return;
+ }
+
+ let out="<b>AI Suggestions</b><br>";
+
+ outcomes.forEach(o=>{
+
+  if(o.lodging=="severe"){
+    out+=`${o.cross} → Use short strong parent<br>`;
   }
 
-  // ===== CLASSIFICATION =====
-  let result = [];
-
-  for(let line in means){
-
-    let m = means[line];
-    let score = 0;
-    let reject = false;
-    let notes = [];
-
-    // ===== A LINE RULES =====
-    if(m.type === "A Line"){
-
-      if(m["stigma exertion"] < 20){
-        reject = true;
-        notes.push("Low stigma");
-      } else score += 2;
-
-      if(m["spikelet opening"] < 5){
-        reject = true;
-        notes.push("Poor spikelet opening");
-      } else score += 2;
-    }
-
-    // ===== R LINE RULES =====
-    if(m.type === "R Line"){
-
-      if(m["pollen shedding"] < 5){
-        reject = true;
-        notes.push("Low pollen");
-      } else score += 2;
-
-      if(m["anther size"] < 3){
-        notes.push("Small anther");
-      } else score += 1;
-    }
-
-    // ===== COMMON RULES =====
-    if(m["plant height"] > 140){
-      notes.push("Tall");
-    } else score += 1;
-
-    if(m["tiller per plant"] < 8){
-      reject = true;
-      notes.push("Low tillering");
-    } else score += 1;
-
-    if(m["productive tillers"] < 6){
-      reject = true;
-      notes.push("Low productive tillers");
-    } else score += 1;
-
-    result.push({
-      line: line,
-      type: m.type,
-      score: score,
-      reject: reject,
-      notes: notes.join(", ")
-    });
+  if(o.disease=="high"){
+    out+=`${o.cross} → Add tolerant line<br>`;
   }
 
-  // ===== FILTER GOOD LINES =====
-  let A_good = result.filter(x=>x.type==="A Line" && !x.reject);
-  let R_good = result.filter(x=>x.type==="R Line" && !x.reject);
-
-  // ===== CROSS MATCHING =====
-  let crosses = [];
-
-  A_good.forEach(a=>{
-    R_good.forEach(r=>{
-
-      let matchScore = (a.score + r.score)/2;
-
-      let tag = "Moderate";
-
-      if(matchScore > 5) tag = "High Match ✔";
-      if(matchScore < 3) tag = "Poor ❌";
-
-      crosses.push({
-        cross: `${a.line} x ${r.line}`,
-        score: matchScore,
-        tag: tag
-      });
-    });
-  });
-
-  crosses.sort((a,b)=>b.score-a.score);
-
-  // ===== OUTPUT =====
-  let out = "<b>Line Classification:</b><br>";
-
-  result.forEach(r=>{
-    let status = r.reject ? "❌ Rejected" : "✔ Selected";
-    out += `${r.line} (${r.type}) → Score: ${r.score} → ${status} (${r.notes})<br>`;
-  });
-
-  out += "<br><b>Top Cross Suggestions:</b><br>";
-
-  crosses.slice(0,10).forEach(c=>{
-    out += `${c.cross} → ${c.tag}<br>`;
-  });
-
-  document.getElementById("classResult").innerHTML = out;
+  if(o.yield>=3){
+    out+=`${o.cross} → Good cross refine it<br>`;
   }
 
-  function runAI(){
+ });
 
-  let q = document.getElementById("aiQuery").value.toLowerCase();
-  let data = JSON.parse(localStorage.getItem("pbos")||"[]");
+ aiNext.innerHTML=out;
+}
 
-  let response = "";
-
-  // ===== BEST A LINE =====
-  if(q.includes("best a")){
-
-    let best = null;
-
-    data.forEach(e=>{
-      if(e.type==="A Line"){
-        let score = 0;
-
-        e.traits.forEach(t=>{
-          if(t.name.toLowerCase()=="stigma exertion" && t.value>20) score+=2;
-          if(t.name.toLowerCase()=="spikelet opening" && t.value>5) score+=2;
-        });
-
-        if(!best || score > best.score){
-          best = {line:e.id,score};
-        }
-      }
-    });
-
-    response = best ? `Best A line: ${best.line}` : "No A lines found";
-  }
-
-  // ===== REJECT R LINES =====
-  else if(q.includes("reject r")){
-
-    let rejects = [];
-
-    data.forEach(e=>{
-      if(e.type==="R Line"){
-        e.traits.forEach(t=>{
-          if(t.name.toLowerCase()=="pollen shedding" && t.value<5){
-            rejects.push(e.id);
-          }
-        });
-      }
-    });
-
-    response = rejects.length ? "Reject R lines: "+rejects.join(", ") : "No rejection";
-  }
-
-  // ===== CROSS SUGGESTION =====
-  else if(q.includes("cross")){
-
-    let A = data.filter(e=>e.type==="A Line");
-    let R = data.filter(e=>e.type==="R Line");
-
-    if(A.length && R.length){
-      response = `Try cross: ${A[0].id} x ${R[0].id}`;
-    } else {
-      response = "Not enough lines";
-    }
-  }
-
-  else{
-    response = "Try: best A line, reject R lines, suggest cross";
-  }
-
-  document.getElementById("aiResult").innerHTML = response;
-  }
-  function saveOutcome(){
-
-  let outcomes = JSON.parse(localStorage.getItem("outcomes")||"[]");
-
-  outcomes.push({
-    cross: crossName.value.trim(),
-    yield: parseFloat(yieldVal.value)||0,
-    lodging: (lodgingVal.value||"").toLowerCase(),
-    disease: (diseaseVal.value||"").toLowerCase(),
-    notes: (notesVal.value||"").toLowerCase(),
-    ts: Date.now()
-  });
-
-  localStorage.setItem("outcomes", JSON.stringify(outcomes));
-
-  outcomeMsg.innerHTML = "Saved";
-  }
-  function recommendNext(){
-
-  let outcomes = JSON.parse(localStorage.getItem("outcomes")||"[]");
-  let data = JSON.parse(localStorage.getItem("pbos")||"[]");
-
-  if(!outcomes.length){
-    aiNext.innerHTML = "No past outcomes yet";
-    return;
-  }
-
-  // --- Aggregate issues by cross ---
-  let issues = {};
-
-  outcomes.forEach(o=>{
-    if(!issues[o.cross]) issues[o.cross] = {lodging:0,disease:0,good:0};
-
-    if(o.lodging==="severe" || o.lodging==="moderate") issues[o.cross].lodging++;
-    if(o.disease==="high") issues[o.cross].disease++;
-    if(o.yield>=3) issues[o.cross].good++;
-  });
-
-  // --- Helper: get parent traits (means) ---
-  function getLineMean(lineId, trait){
-    let vals = [];
-    data.forEach(e=>{
-      if(e.id===lineId){
-        e.traits.forEach(t=>{
-          if(t.name.toLowerCase()===trait) vals.push(parseFloat(t.value));
-        });
-      }
-    });
-    if(!vals.length) return null;
-    return vals.reduce((a,b)=>a+b,0)/vals.length;
-  }
-
-  // --- Build candidate A and R pools (basic filters) ---
-  let A_pool = [...new Set(data.filter(e=>e.type==="A Line").map(e=>e.id))];
-  let R_pool = [...new Set(data.filter(e=>e.type==="R Line").map(e=>e.id))];
-
-  let suggestions = [];
-
-  Object.keys(issues).forEach(cross=>{
-    let [A,R] = cross.split("x").map(s=>s.trim());
-
-    let tag = issues[cross];
-
-    // Base: keep heterotic pattern if it showed good yield at least once
-    let keepPattern = tag.good > 0;
-
-    // --- Fix strategies ---
-    let fixes = [];
-
-    if(tag.lodging>0){
-      fixes.push("reduce_height_and_increase_strength");
-    }
-    if(tag.disease>0){
-      fixes.push("introduce_disease_tolerance");
-    }
-
-    // --- Generate alternatives ---
-    A_pool.forEach(a2=>{
-      R_pool.forEach(r2=>{
-
-        // Start from same pattern if possible
-        if(keepPattern){
-          // keep one parent, change the other
-          if(!(a2===A || r2===R)) return;
-        }
-
-        // --- Apply lodging fix ---
-        if(fixes.includes("reduce_height_and_increase_strength")){
-          let hA = getLineMean(a2,"plant height");
-          let hR = getLineMean(r2,"plant height");
-          let tillA = getLineMean(a2,"tiller per plant");
-          let tillR = getLineMean(r2,"tiller per plant");
-
-          // prefer shorter + adequate tillering
-          if(hA && hA>135) return;
-          if(hR && hR>135) return;
-          if(tillA && tillA<8) return;
-          if(tillR && tillR<8) return;
-        }
-
-        // --- Apply disease fix (proxy: vigor + density if you don’t store resistance yet) ---
-        if(fixes.includes("introduce_disease_tolerance")){
-          let vigA = getLineMean(a2,"vigour");
-          let vigR = getLineMean(r2,"vigour");
-          // simple proxy: avoid very low vigor
-          if(vigA!==null && vigA<1) return;
-          if(vigR!==null && vigR<1) return;
-        }
-
-        suggestions.push({
-          cross: `${a2} x ${r2}`,
-          reason: `${cross} → fixes: ${fixes.join(", ") || "optimize"}`
-        });
-      });
-    });
-
-  });
-
-  // Deduplicate & limit
-  let seen = new Set();
-  let uniq = [];
-  suggestions.forEach(s=>{
-    if(!seen.has(s.cross)){
-      seen.add(s.cross);
-      uniq.push(s);
-    }
-  });
-
-  let out = "<b>Recommended Next Crosses:</b><br>";
-  uniq.slice(0,10).forEach(s=>{
-    out += `${s.cross} → ${s.reason}<br>`;
-  });
-
-  aiNext.innerHTML = out || "No suggestions";
-  }
+// INIT
+loadTable();
 
 </script>
 
