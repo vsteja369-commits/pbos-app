@@ -607,38 +607,50 @@ function runSelectionIndex(){
 
   let lines = text.split("\n");
 
+  let headers = lines[0].split(",").map(h=>h.trim().toLowerCase());
+
   let data = JSON.parse(localStorage.getItem("pbos")||"[]");
 
-  lines.forEach((line,i)=>{
+  for(let i=1;i<lines.length;i++){
 
-    // skip header row
-    if(i===0 && line.toLowerCase().includes("line")) return;
+    let parts = lines[i].split(",").map(x=>x.trim());
 
-    let parts = line.split(",");
+    if(parts.length < 4) continue;
 
-    if(parts.length < 6) return;
+    let id = parts[0];
+    let type = parts[1];
+    let rep = parts[2];
 
-    let [id,type,rep,trait,value,unit] = parts.map(x=>x.trim());
+    let traits = [];
+
+    for(let j=3;j<headers.length;j++){
+
+      let value = parts[j];
+
+      if(value !== ""){
+        traits.push({
+          name: headers[j],
+          value: value,
+          unit: ""   // optional for now
+        });
+      }
+    }
 
     let entry = {
       id: id,
       type: type,
       rep: rep,
-      traits: [{
-        name: trait,
-        value: value,
-        unit: unit
-      }]
+      traits: traits
     };
 
     data.push(entry);
-  });
+  }
 
   localStorage.setItem("pbos", JSON.stringify(data));
 
   loadEntries();
 
-  alert("Data Imported Successfully");
+  alert("Excel Data Imported (Multi-trait)");
   }
 </script>
 
