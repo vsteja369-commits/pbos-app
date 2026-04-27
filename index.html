@@ -70,6 +70,18 @@ th, td { border:1px solid #ccc; padding:5px; text-align:center;}
 </div>
 
 <div class="card">
+<h3>Excel Data Entry</h3>
+
+<textarea id="excelInput" rows="8" placeholder="Enter data like:
+Line,Type,Rep,Trait,Value,Unit
+A1,A Line,Rep 1,Height,100,cm
+A1,A Line,Rep 1,Yield,25,g"></textarea>
+
+<button onclick="importExcelData()">Import Data</button>
+
+</div>
+
+<div class="card">
 <h3>Mean</h3>
 <button onclick="calculateMean()">Calculate Mean</button>
 <div id="analysis"></div>
@@ -583,6 +595,51 @@ function runSelectionIndex(){
 
   document.getElementById("siResult").innerHTML = out;
 }
+
+  function importExcelData(){
+
+  let text = document.getElementById("excelInput").value.trim();
+
+  if(!text){
+    alert("No data entered");
+    return;
+  }
+
+  let lines = text.split("\n");
+
+  let data = JSON.parse(localStorage.getItem("pbos")||"[]");
+
+  lines.forEach((line,i)=>{
+
+    // skip header row
+    if(i===0 && line.toLowerCase().includes("line")) return;
+
+    let parts = line.split(",");
+
+    if(parts.length < 6) return;
+
+    let [id,type,rep,trait,value,unit] = parts.map(x=>x.trim());
+
+    let entry = {
+      id: id,
+      type: type,
+      rep: rep,
+      traits: [{
+        name: trait,
+        value: value,
+        unit: unit
+      }]
+    };
+
+    data.push(entry);
+  });
+
+  localStorage.setItem("pbos", JSON.stringify(data));
+
+  loadEntries();
+
+  alert("Data Imported Successfully");
+  }
 </script>
 
 </body>
