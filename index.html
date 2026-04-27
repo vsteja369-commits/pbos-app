@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Breeding Intelligence System</title>
+<title>Breeding Intelligence Full System</title>
 
 <style>
 body {font-family: Arial; background:#f4f4f4;}
@@ -11,36 +11,73 @@ body {font-family: Arial; background:#f4f4f4;}
 button {padding:8px; margin:5px;}
 table {width:100%; border-collapse:collapse;}
 td,th {border:1px solid #ccc; padding:6px;}
-img {width:60px;}
+input,textarea {width:100%; margin:5px 0; padding:6px;}
 </style>
 </head>
 
 <body>
 
-<h2 style="text-align:center;">🌾 Breeding Intelligence System</h2>
+<h2 style="text-align:center;">🌾 Full Breeding Intelligence System</h2>
 
+<!-- ================= DATA ENTRY ================= -->
 <div class="card">
-<h3>Excel Entry</h3>
-<textarea id="excelInput" rows="6" placeholder="Line,Type,Rep,Plant Height,Yield"></textarea>
-<br>
+<h3>Excel Data Entry</h3>
+<textarea id="excelInput" rows="6" placeholder="Line,Type,Rep,Days to 50% Flowering,Yield"></textarea>
 <button onclick="importExcel()">Import</button>
-<button onclick="clearData()">Clear All Data</button>
+<button onclick="clearData()">Clear</button>
 <button onclick="exportExcel()">Export Excel</button>
 <button onclick="exportWord()">Export Word</button>
 </div>
 
+<!-- ================= TABLE ================= -->
 <div class="card">
 <h3>Editable Table</h3>
 <div id="tableView"></div>
 <button onclick="addRow()">Add Row</button>
 </div>
 
+<!-- ================= CLASSIFICATION ================= -->
 <div class="card">
 <h3>Parent Classification</h3>
 <button onclick="runClassification()">Run</button>
 <div id="classResult"></div>
 </div>
 
+<!-- ================= SELECTION INDEX ================= -->
+<div class="card">
+<h3>Selection Index</h3>
+<input id="traitsListInput" placeholder="yield,height">
+<input id="weightsInput" placeholder="0.7,0.3">
+<button onclick="runSelectionIndex()">Run</button>
+<div id="siResult"></div>
+</div>
+
+<!-- ================= ANOVA ================= -->
+<div class="card">
+<h3>ANOVA</h3>
+<input id="anovaTrait" placeholder="Trait">
+<button onclick="runANOVA()">Run</button>
+<div id="anovaResult"></div>
+</div>
+
+<!-- ================= EXPERIMENTAL DESIGN ================= -->
+<div class="card">
+<h3>Experimental Design (RBD Layout)</h3>
+<input id="treatments" placeholder="No. of Treatments">
+<input id="replications" placeholder="Replications">
+<button onclick="generateRBD()">Generate Layout</button>
+<div id="rbdResult"></div>
+</div>
+
+<!-- ================= GCA SCA ================= -->
+<div class="card">
+<h3>GCA / SCA</h3>
+<input id="gcaTrait" placeholder="Trait">
+<button onclick="runGCA()">Run</button>
+<div id="gcaResult"></div>
+</div>
+
+<!-- ================= OUTCOME ================= -->
 <div class="card">
 <h3>Cross Outcome</h3>
 <input id="crossName" placeholder="A1 x R1">
@@ -51,76 +88,53 @@ img {width:60px;}
 <div id="outcomeMsg"></div>
 </div>
 
+<!-- ================= AI ================= -->
 <div class="card">
-<h3>AI Suggestions</h3>
+<h3>AI Breeding Engine</h3>
 <button onclick="recommendNext()">Run AI</button>
 <div id="aiNext"></div>
 </div>
 
 <script>
 
+// ===== DATA STORAGE =====
+function getData(){ return JSON.parse(localStorage.getItem("pbos")||"[]"); }
+function setData(d){ localStorage.setItem("pbos",JSON.stringify(d)); }
+
 // ===== IMPORT =====
 function importExcel(){
- let text = excelInput.value.trim();
+ let text=excelInput.value.trim();
  if(!text) return;
-
- let lines = text.split("\n");
- let headers = lines[0].split(",").map(h=>h.trim().toLowerCase());
-
- let data = JSON.parse(localStorage.getItem("pbos")||"[]");
+ let lines=text.split("\n");
+ let headers=lines[0].split(",").map(h=>h.trim().toLowerCase());
+ let data=getData();
 
  for(let i=1;i<lines.length;i++){
-  let parts = lines[i].split(",").map(x=>x.trim());
-
+  let parts=lines[i].split(",");
   let traits=[];
   for(let j=3;j<headers.length;j++){
-    if(parts[j]){
-      traits.push({name:headers[j], value:parts[j]});
-    }
+    traits.push({name:headers[j],value:parts[j]});
   }
-
-  data.push({
-    id:parts[0],
-    type:parts[1],
-    rep:parts[2],
-    photo:"",
-    traits:traits
-  });
+  data.push({id:parts[0],type:parts[1],rep:parts[2],traits:traits});
  }
-
- localStorage.setItem("pbos", JSON.stringify(data));
- loadTable();
-}
-
-// ===== CLEAR =====
-function clearData(){
- if(confirm("Delete all data?")){
-  localStorage.removeItem("pbos");
-  loadTable();
- }
+ setData(data); loadTable();
 }
 
 // ===== TABLE =====
 function loadTable(){
-
- let data = JSON.parse(localStorage.getItem("pbos")||"[]");
-
- let html="<table><tr><th>Line</th><th>Type</th><th>Rep</th><th>Trait</th><th>Value</th><th>Photo</th><th>Delete</th></tr>";
+ let data=getData();
+ let html="<table><tr><th>Line</th><th>Type</th><th>Rep</th><th>Trait</th><th>Value</th><th>Delete</th></tr>";
 
  data.forEach((e,i)=>{
   e.traits.forEach((t,j)=>{
-    html+=`<tr>
-      <td contenteditable onblur="saveTable()">${e.id}</td>
-      <td contenteditable onblur="saveTable()">${e.type}</td>
-      <td contenteditable onblur="saveTable()">${e.rep}</td>
-      <td contenteditable onblur="saveTable()">${t.name}</td>
-      <td contenteditable onblur="saveTable()">${t.value}</td>
-      <td>
-        <input type="file" onchange="uploadPhoto(event,${i})">
-        ${e.photo ? `<img src="${e.photo}">` : ""}
-      </td>
-      <td><button onclick="deleteRow(${i})">X</button></td>
-    </tr>`;
+   html+=`<tr>
+   <td contenteditable onblur="saveTable()">${e.id}</td>
+   <td contenteditable onblur="saveTable()">${e.type}</td>
+   <td contenteditable onblur="saveTable()">${e.rep}</td>
+   <td contenteditable onblur="saveTable()">${t.name}</td>
+   <td contenteditable onblur="saveTable()">${t.value}</td>
+   <td><button onclick="deleteRow(${i})">X</button></td>
+   </tr>`;
   });
  });
 
@@ -128,164 +142,146 @@ function loadTable(){
  tableView.innerHTML=html;
 }
 
-// ===== SAVE =====
 function saveTable(){
- let rows = document.querySelectorAll("#tableView table tr");
- let newData=[];
-
+ let rows=document.querySelectorAll("#tableView tr");
+ let data=[];
  rows.forEach((r,i)=>{
   if(i===0) return;
-
   let c=r.querySelectorAll("td");
-
-  newData.push({
-    id:c[0].innerText,
-    type:c[1].innerText,
-    rep:c[2].innerText,
-    photo:"",
-    traits:[{name:c[3].innerText, value:c[4].innerText}]
+  data.push({
+   id:c[0].innerText,
+   type:c[1].innerText,
+   rep:c[2].innerText,
+   traits:[{name:c[3].innerText,value:c[4].innerText}]
   });
  });
-
- localStorage.setItem("pbos", JSON.stringify(newData));
+ setData(data);
 }
 
-// ===== ADD ROW =====
 function addRow(){
- let data = JSON.parse(localStorage.getItem("pbos")||"[]");
- data.push({id:"",type:"",rep:"",photo:"",traits:[{name:"",value:""}]});
- localStorage.setItem("pbos", JSON.stringify(data));
- loadTable();
+ let d=getData();
+ d.push({id:"",type:"",rep:"",traits:[{name:"",value:""}]});
+ setData(d); loadTable();
 }
 
-// ===== DELETE =====
-function deleteRow(index){
- let data = JSON.parse(localStorage.getItem("pbos")||"[]");
- data.splice(index,1);
- localStorage.setItem("pbos", JSON.stringify(data));
- loadTable();
+function deleteRow(i){
+ let d=getData(); d.splice(i,1); setData(d); loadTable();
 }
 
-// ===== PHOTO =====
-function uploadPhoto(e,i){
- let reader=new FileReader();
- reader.onload=function(){
-  let data = JSON.parse(localStorage.getItem("pbos")||"[]");
-  data[i].photo=reader.result;
-  localStorage.setItem("pbos", JSON.stringify(data));
-  loadTable();
- };
- reader.readAsDataURL(e.target.files[0]);
-}
+// ===== CLEAR =====
+function clearData(){ localStorage.clear(); loadTable(); }
 
 // ===== EXPORT =====
 function exportExcel(){
- let data = JSON.parse(localStorage.getItem("pbos")||"[]");
-
+ let d=getData();
  let csv="Line,Type,Rep,Trait,Value\n";
-
- data.forEach(e=>{
-  e.traits.forEach(t=>{
-    csv+=`${e.id},${e.type},${e.rep},${t.name},${t.value}\n`;
-  });
- });
-
- let blob = new Blob([csv]);
+ d.forEach(e=>e.traits.forEach(t=>csv+=`${e.id},${e.type},${e.rep},${t.name},${t.value}\n`));
+ let blob=new Blob([csv]);
  let a=document.createElement("a");
  a.href=URL.createObjectURL(blob);
- a.download="data.csv";
- a.click();
+ a.download="data.csv"; a.click();
 }
 
 function exportWord(){
- let data = JSON.parse(localStorage.getItem("pbos")||"[]");
-
+ let d=getData();
  let text="Breeding Data\n\n";
-
- data.forEach(e=>{
-  text+=`Line: ${e.id}\nType: ${e.type}\n`;
-  e.traits.forEach(t=>{
-    text+=`${t.name}: ${t.value}\n`;
-  });
+ d.forEach(e=>{
+  text+=`${e.id} (${e.type})\n`;
+  e.traits.forEach(t=>text+=`${t.name}: ${t.value}\n`);
   text+="\n";
  });
-
- let blob=new Blob([text],{type:"application/msword"});
+ let blob=new Blob([text]);
  let a=document.createElement("a");
  a.href=URL.createObjectURL(blob);
- a.download="data.doc";
- a.click();
+ a.download="data.doc"; a.click();
 }
 
 // ===== CLASSIFICATION =====
 function runClassification(){
-
- let data = JSON.parse(localStorage.getItem("pbos")||"[]");
-
+ let d=getData();
  let out="";
-
- data.forEach(e=>{
+ d.forEach(e=>{
   let score=0;
-
   e.traits.forEach(t=>{
-    if(t.name.toLowerCase()=="stigma exertion" && t.value>20) score+=2;
-    if(t.name.toLowerCase()=="pollen shedding" && t.value>5) score+=2;
+   if(t.name=="stigma exertion" && t.value>20) score+=2;
+   if(t.name=="pollen shedding" && t.value>5) score+=2;
   });
+  out+=`${e.id} → ${score>=2?"Selected":"Rejected"}<br>`;
+ });
+ classResult.innerHTML=out;
+}
 
-  let status = score>=2 ? "Selected" : "Rejected";
+// ===== SELECTION INDEX =====
+function runSelectionIndex(){
+ let traits=traitsListInput.value.split(",");
+ let weights=weightsInput.value.split(",").map(Number);
+ let d=getData();
+ let map={};
 
-  out+=`${e.id} → ${status} (Score ${score})<br>`;
+ d.forEach(e=>{
+  if(!map[e.id]) map[e.id]={};
+  e.traits.forEach(t=>{
+   if(traits.includes(t.name)){
+    map[e.id][t.name]=+t.value;
+   }
+  });
  });
 
- classResult.innerHTML=out;
+ let out="";
+ Object.keys(map).forEach(k=>{
+  let score=0;
+  traits.forEach((t,i)=>score+=weights[i]*(map[k][t]||0));
+  out+=`${k}: ${score}<br>`;
+ });
+ siResult.innerHTML=out;
+}
+
+// ===== ANOVA =====
+function runANOVA(){
+ anovaResult.innerHTML="Basic ANOVA placeholder (full stats can be extended)";
+}
+
+// ===== RBD =====
+function generateRBD(){
+ let t=+treatments.value;
+ let r=+replications.value;
+ let out="";
+ for(let i=1;i<=r;i++){
+  out+="Rep "+i+": ";
+  let arr=[...Array(t).keys()].map(x=>"T"+(x+1));
+  arr.sort(()=>Math.random()-0.5);
+  out+=arr.join(" , ")+"<br>";
+ }
+ rbdResult.innerHTML=out;
+}
+
+// ===== GCA =====
+function runGCA(){
+ gcaResult.innerHTML="Basic GCA placeholder";
 }
 
 // ===== OUTCOME =====
 function saveOutcome(){
-
- let outcomes = JSON.parse(localStorage.getItem("outcomes")||"[]");
-
- outcomes.push({
+ let o=JSON.parse(localStorage.getItem("outcomes")||"[]");
+ o.push({
   cross:crossName.value,
   yield:+yieldVal.value,
-  lodging:lodgingVal.value.toLowerCase(),
-  disease:diseaseVal.value.toLowerCase()
+  lodging:lodgingVal.value,
+  disease:diseaseVal.value
  });
-
- localStorage.setItem("outcomes", JSON.stringify(outcomes));
-
+ localStorage.setItem("outcomes",JSON.stringify(o));
  outcomeMsg.innerHTML="Saved";
 }
 
 // ===== AI =====
 function recommendNext(){
-
- let outcomes = JSON.parse(localStorage.getItem("outcomes")||"[]");
- let data = JSON.parse(localStorage.getItem("pbos")||"[]");
-
- if(!outcomes.length){
-  aiNext.innerHTML="No data";
-  return;
- }
-
- let out="<b>AI Suggestions</b><br>";
-
- outcomes.forEach(o=>{
-
-  if(o.lodging=="severe"){
-    out+=`${o.cross} → Use short strong parent<br>`;
-  }
-
-  if(o.disease=="high"){
-    out+=`${o.cross} → Add tolerant line<br>`;
-  }
-
-  if(o.yield>=3){
-    out+=`${o.cross} → Good cross refine it<br>`;
-  }
-
+ let o=JSON.parse(localStorage.getItem("outcomes")||"[]");
+ let out="";
+ o.forEach(x=>{
+  if(x.lodging=="severe") out+=`${x.cross} → Use strong parent<br>`;
+  if(x.disease=="high") out+=`${x.cross} → Add tolerant line<br>`;
+  if(x.yield>3) out+=`${x.cross} → Good cross refine<br>`;
  });
-
  aiNext.innerHTML=out;
 }
 
